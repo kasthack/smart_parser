@@ -50,6 +50,7 @@ namespace Smart.Parser.Adapters
 
                 index++;
             }
+
             return result;
         }
 
@@ -78,7 +79,8 @@ namespace Smart.Parser.Adapters
             {
                 node = node.PreviousSibling;
             }
-            var text = "";
+
+            var text = string.Empty;
             while (node.NextSibling != this.table)
             {
                 text += node.ToString();

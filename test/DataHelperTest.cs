@@ -10,6 +10,7 @@ namespace test
         public DataHelperTest()
         {
         }
+
         [TestMethod]
         public void TestParseSquare()
         {

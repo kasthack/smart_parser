@@ -10,13 +10,15 @@ namespace SmartAntlr
         public GeneralAntlrParserWrapper ParserWrapper;
 
         public SoupVisitor(GeneralAntlrParserWrapper parser) => this.ParserWrapper = parser;
-        private RealtyFromText InitializeOneRecord(Soup.Any_realty_itemContext  context)
+
+        private RealtyFromText InitializeOneRecord(Soup.Any_realty_itemContext context)
         {
             var record = new RealtyFromText(this.ParserWrapper, context);
             if (context.own_type() != null)
             {
                 record.OwnType = context.own_type().OWN_TYPE().GetText();
             }
+
             if (context.realty_type() != null)
             {
                 record.RealtyType = context.realty_type().REALTY_TYPE().GetText();
@@ -27,14 +29,17 @@ namespace SmartAntlr
                 var sc = context.square();
                 record.InitializeSquare(sc.square_value().GetText(), sc.HECTARE() != null);
             }
+
             if (context.own_type()?.realty_share() != null)
             {
                 record.RealtyShare = context.own_type().realty_share().GetText();
             }
+
             if (context.country() != null)
             {
                 record.Country = this.ParserWrapper.GetSourceTextByParserContext(context.country());
             }
+
             return record;
         }
 
@@ -46,6 +51,7 @@ namespace SmartAntlr
             {
                 this.Lines.Add(line);
             }
+
             return line;
         }
     }
@@ -58,7 +64,7 @@ namespace SmartAntlr
         {
             this.InitLexer(inputText);
             var parser = new Soup(this.CommonTokenStream, this.Output, this.ErrorOutput);
-            //parser.Trace = true;
+            // parser.Trace = true;
             this.Parser = parser;
             // parser.ErrorHandler = new BailErrorStrategy();
             ///parser.ErrorHandler = new MyGrammarErrorStrategy();

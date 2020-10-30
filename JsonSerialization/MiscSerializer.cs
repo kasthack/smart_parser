@@ -19,7 +19,7 @@ namespace TI.Declarator.JsonSerialization
                 new JProperty("document_file_id", ue.DocumentFileId),
                 new JProperty("row", ue.ExcelRowNumber),
                 new JProperty("sheet", ue.ExcelSheetNumber),
-                new JProperty("page", ue.WordPageNumber)
+                new JProperty("page", ue.WordPageNumber),
             };
 
             return res.ToString();

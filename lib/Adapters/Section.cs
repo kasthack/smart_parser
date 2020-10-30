@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace Smart.Parser.Adapters
 {
-    //using Smart.Parser.Row;
+    // using Smart.Parser.Row;
     public class TSectionPredicates
     {
         private static bool CheckSectionLanguageModel(string cellText)
@@ -12,6 +12,7 @@ namespace Smart.Parser.Adapters
             {
                 return true;
             }
+
             // first words: get it from previous results:
             // ~/media/json$ ls | xargs  jq -cr '.persons[].person.department' | awk '{print $1}' | sort | uniq -c  | sort -nr
             // стоит перейти на более продвинутую модель на триграммах
@@ -47,10 +48,11 @@ namespace Smart.Parser.Adapters
             {
                 return false;
             }
+
             var maxMergedCols = 0;
             var maxCellWidth = 0;
-            var rowText = "";
-            var cellText = "";
+            var rowText = string.Empty;
+            var cellText = string.Empty;
             var cellsWithTextCount = 0;
             var allWidth = 0;
             foreach (var c in cells)
@@ -61,6 +63,7 @@ namespace Smart.Parser.Adapters
                     cellText = trimmedText;
                     maxMergedCols = c.MergedColsCount;
                 }
+
                 if (trimmedText.Length > 0)
                 {
                     rowText += c.Text;
@@ -70,8 +73,10 @@ namespace Smart.Parser.Adapters
                         maxCellWidth = c.CellWidth;
                     }
                 }
+
                 allWidth += c.CellWidth;
             }
+
             rowText = rowText.Trim(' ', '\n');
             var manyColsAreMerged = maxMergedCols > colsCount * 0.45;
             var OneColumnIsLarge = maxCellWidth > 1000 || maxCellWidth >= allWidth * 0.3;
@@ -80,7 +85,7 @@ namespace Smart.Parser.Adapters
             var halfCapitalLetters = rowText.Count(char.IsUpper) * 2 > rowText.Length;
 
             // Stop Words
-            var stopWords = new List<string> {"сведения", };
+            var stopWords = new List<string> { "сведения", };
             var hasStopWord = false;
             foreach (var word in stopWords)
             {
@@ -89,12 +94,13 @@ namespace Smart.Parser.Adapters
                     hasStopWord = true;
                 }
             }
+
             if (hasStopWord)
             {
                 return false;
             }
 
-            // "ННИИПК", "СамГМУ"  
+            // "ННИИПК", "СамГМУ"
             if (!hasEnoughLength && !halfCapitalLetters)
             {
                 return false;
@@ -113,12 +119,14 @@ namespace Smart.Parser.Adapters
                     text = rowText;
                     return true;
                 }
+
                 if (manyColsAreMerged)
                 {
                     text = rowText;
                     return true;
                 }
             }
+
             if (cellsWithTextCount <= 2 && manyColsAreMerged && langModel)
             {
                 text = cellText;
@@ -131,6 +139,7 @@ namespace Smart.Parser.Adapters
                 text = rowText;
                 return true;
             }
+
             return false;
         }
     }

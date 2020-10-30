@@ -11,12 +11,17 @@ namespace Smart.Parser.Adapters
 {
     public class Cell
     {
-        public virtual bool IsMerged { set; get; } = false;
-        public virtual int FirstMergedRow { set; get; } = -1;
-        public virtual int MergedRowsCount { set; get; } = -1;
-        public virtual int MergedColsCount { set; get; } = 1;
-        public virtual bool IsEmpty { set; get; } = true;
-        public virtual string Text { set; get; } = "";
+        public virtual bool IsMerged { get; set; } = false;
+
+        public virtual int FirstMergedRow { get; set; } = -1;
+
+        public virtual int MergedRowsCount { get; set; } = -1;
+
+        public virtual int MergedColsCount { get; set; } = 1;
+
+        public virtual bool IsEmpty { get; set; } = true;
+
+        public virtual string Text { get; set; } = string.Empty;
 
         public string TextAbove = null;
 
@@ -51,13 +56,13 @@ namespace Smart.Parser.Adapters
             graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Low;
 
             var stringSize = new SizeF();
-            var font = new System.Drawing.Font(this.FontName, this.FontSize / 2);
+            var font = new Font(this.FontName, this.FontSize / 2);
             foreach (var hardLine in hardLines)
             {
                 stringSize = graphics.MeasureString(hardLine, font);
                 // Logger.Info("stringSize = {0} (FontName = {2}, fontsize = {1})", stringSize, FontSize / 2, FontName);
 
-                const int defaultMargin = 11; //to do calc it really
+                const int defaultMargin = 11; // to do calc it really
                 var softLinesCount = (int)(stringSize.Width / (this.CellWidth - defaultMargin)) + 1;
                 if (softLinesCount == 1)
                 {
@@ -87,6 +92,7 @@ namespace Smart.Parser.Adapters
                                 len = (wordBreak == -1) ? hardLine.Length - start : wordBreak - start;
                             }
                         }
+
                         res.Add(hardLine.Substring(start, len));
                         start += len;
                         if (start >= hardLine.Length)
@@ -96,22 +102,25 @@ namespace Smart.Parser.Adapters
                     }
                 }
             }
+
             // Logger.Info("result = {0}", string.Join("|\n", res));
             return res;
         }
 
         public int Row { get; set; } = -1;
+
         public int Col { get; set; } = -1; // not merged column index
 
         public int CellWidth = 0; // in pixels
         public int AdditTableIndention = 0; // only for Word: http://officeopenxml.com/WPtableIndent.php
         public string FontName;
         public int FontSize;
-    };
+    }
 
     public class DataRow : DataRowInterface
     {
         private void MapCells() => this.MappedHeader = MapByOrderAndIntersection(this.ColumnOrdering, this.Cells) ?? MapByMaxIntersection(this.ColumnOrdering, this.Cells);
+
         public DataRow(IAdapter adapter, ColumnOrdering columnOrdering, int row)
         {
             this.row = row;
@@ -123,13 +132,15 @@ namespace Smart.Parser.Adapters
                 this.MapCells();
             }
         }
+
         public string DebugString()
         {
-            var s = "";
+            var s = string.Empty;
             foreach (var c in this.Cells)
             {
-                s += string.Format("\"{0}\"[{1}], ",c.Text.Replace("\n", "\\n"),c.CellWidth);
+                s += $"\"{c.Text.Replace("\n", "\\n")}\"[{c.CellWidth}], ";
             }
+
             return s;
         }
 
@@ -137,15 +148,16 @@ namespace Smart.Parser.Adapters
         {
             var other = new DataRow(this.adapter, this.ColumnOrdering, this.row)
             {
-                Cells = new List<Cell>()
+                Cells = new List<Cell>(),
             };
             foreach (var x in this.Cells)
             {
                 var c = x.ShallowCopy();
                 c.IsEmpty = true;
-                c.Text = "";
+                c.Text = string.Empty;
                 other.Cells.Add(c);
             }
+
             other.MapCells();
             return other;
         }
@@ -156,6 +168,7 @@ namespace Smart.Parser.Adapters
             {
                 return null;
             }
+
             var start = cells[0].AdditTableIndention;
             var res = new Dictionary<DeclarationField, Cell>();
             var pixelErrorCount = 0;
@@ -173,21 +186,22 @@ namespace Smart.Parser.Adapters
                     {
                         if (!ColumnPredictor.TestFieldWithoutOwntypes(colInfo.Field, cells[i]))
                         {
-                            Logger.Debug(string.Format("cannot map column N={0} text={1}", i, cells[i].Text.Replace("\n", "\\n")));
+                            Logger.Debug($"cannot map column N={i} text={cells[i].Text.Replace("\n", "\\n")}");
                             return null;
                         }
                         else
                         {
-                            Logger.Debug(string.Format("found semantic argument for mapping N={0} text={1} to {2}",
-                                i, cells[i].Text.Replace("\n", "\\n"), colInfo.Field));
+                            Logger.Debug($"found semantic argument for mapping N={i} text={cells[i].Text.Replace("\n", "\\n")} to {colInfo.Field}");
                             pixelErrorCount = 0;
                         }
                     }
                 }
+
                 res[columnOrdering.MergedColumnOrder[i].Field] = cells[i];
 
                 start = e1;
             }
+
             return pixelErrorCount >= 3 ? null : res;
         }
 
@@ -207,7 +221,7 @@ namespace Smart.Parser.Adapters
             var start = cells[0].AdditTableIndention;
             foreach (var c in cells)
             {
-                if (c.CellWidth >  0 )
+                if (c.CellWidth > 0)
                 {
                     var field = columnOrdering.FindByPixelIntersection(start, start + c.CellWidth, out var interSize);
 
@@ -216,16 +230,19 @@ namespace Smart.Parser.Adapters
                     {
                         return null;
                     }
+
                     // take only fields with maximal pixel intersection
                     if (!sizes.ContainsKey(field) || sizes[field] < interSize)
                     {
-                        //Logger.Debug(string.Format("map {1} to {0}", field, c.Text.Replace("\n", "\\n")));
+                        // Logger.Debug(string.Format("map {1} to {0}", field, c.Text.Replace("\n", "\\n")));
                         res[field] = c;
                         sizes[field] = interSize;
                     }
                 }
+
                 start += c.CellWidth;
             }
+
             return res;
         }
 
@@ -247,11 +264,13 @@ namespace Smart.Parser.Adapters
             {
                 return cell;
             }
+
             var exactCell = this.adapter.GetDeclarationFieldWeak(this.ColumnOrdering, this.row, field, out var colSpan);
-            if (exactCell.Text.Trim() != "" || exactCell.Col == -1)
+            if (exactCell.Text.Trim() != string.Empty || exactCell.Col == -1)
             {
                 return exactCell;
             }
+
             for (var i = exactCell.Col + exactCell.MergedColsCount; i < colSpan.EndColumn;)
             {
                 var mergedCell = this.adapter.GetCell(this.row, i);
@@ -259,12 +278,15 @@ namespace Smart.Parser.Adapters
                 {
                     break;
                 }
-                if (mergedCell.Text.Trim() != "")
+
+                if (mergedCell.Text.Trim() != string.Empty)
                 {
                     return mergedCell;
                 }
+
                 i += mergedCell.MergedColsCount;
             }
+
             return exactCell;
         }
 
@@ -272,7 +294,7 @@ namespace Smart.Parser.Adapters
         {
             if (!this.ColumnOrdering.ContainsField(field) && !except)
             {
-                return "";
+                return string.Empty;
             }
 
             Cell c;
@@ -284,13 +306,13 @@ namespace Smart.Parser.Adapters
             {
                 if (!except)
                 {
-                    return "";
+                    return string.Empty;
                 }
 
                 throw;
             }
 
-            return c == null ? "" : c.GetText(true);
+            return c == null ? string.Empty : c.GetText(true);
         }
 
         public bool IsEmpty() => this.Cells.All(cell => cell.Text.IsNullOrWhiteSpace());
@@ -301,13 +323,14 @@ namespace Smart.Parser.Adapters
             if (this.ColumnOrdering.ContainsField(DeclarationField.Number))
             {
                 var indexStr = this.GetDeclarationField(DeclarationField.Number).Text
-                    .Replace(".", "").ReplaceEolnWithSpace();
+                    .Replace(".", string.Empty).ReplaceEolnWithSpace();
                 var dummyRes = int.TryParse(indexStr, out var indVal);
                 if (dummyRes)
                 {
                     index = indVal;
                 }
             }
+
             return index;
         }
 
@@ -317,11 +340,11 @@ namespace Smart.Parser.Adapters
             {
                 value = string.Empty;
             }
+
             this.RelativeType = value;
             if (this.RelativeType != string.Empty && !DataHelper.IsRelativeInfo(this.RelativeType))
             {
-                throw new SmartParserException(
-                    string.Format("Wrong relative type {0} at row {1}", this.RelativeType, this.GetRowIndex()));
+                throw new SmartParserException($"Wrong relative type {this.RelativeType} at row {this.GetRowIndex()}");
             }
         }
 
@@ -343,7 +366,7 @@ namespace Smart.Parser.Adapters
             else
             {
                 const string pattern = @"\s+\p{Pd}\s+"; // UnicodeCategory.DashPunctuation
-                v = Regex.Replace(v, @"\d+\.\s+", "");
+                v = Regex.Replace(v, @"\d+\.\s+", string.Empty);
                 var two_parts = Regex.Split(v, pattern);
                 var clean_v = Regex.Replace(v, pattern, " ");
                 var words = Regex.Split(clean_v, @"[\,\s\n]+");
@@ -376,7 +399,7 @@ namespace Smart.Parser.Adapters
                 else
                 {
                     throw new SmartParserException(
-                        string.Format("Cannot parse name+occupation value {0} at row {1}", v, this.GetRowIndex()));
+                        $"Cannot parse name+occupation value {v} at row {this.GetRowIndex()}");
                 }
             }
         }
@@ -385,7 +408,7 @@ namespace Smart.Parser.Adapters
         {
             if (this.ColumnOrdering.ContainsField(DeclarationField.RelativeTypeStrict))
             {
-                this.SetRelative (this.GetDeclarationField(DeclarationField.RelativeTypeStrict).Text.ReplaceEolnWithSpace());
+                this.SetRelative(this.GetDeclarationField(DeclarationField.RelativeTypeStrict).Text.ReplaceEolnWithSpace());
             }
 
             string nameOrRelativeType;
@@ -397,7 +420,8 @@ namespace Smart.Parser.Adapters
                     {
                         this.DivideNameAndOccupation();
                     }
-                    catch (SmartParserException) {
+                    catch (SmartParserException)
+                    {
                         // maybe PDF has split cells (table on different pages)
                         // example file: "5966/14 Upravlenie delami.pdf" converted to docx
                         var nameCell = this.GetDeclarationField(DeclarationField.NameAndOccupationOrRelativeType);
@@ -409,16 +433,18 @@ namespace Smart.Parser.Adapters
             else
             {
                 var nameCell = this.GetDeclarationField(DeclarationField.NameOrRelativeType);
-                nameOrRelativeType = nameCell.Text.ReplaceEolnWithSpace().Replace("не имеет", "");
+                nameOrRelativeType = nameCell.Text.ReplaceEolnWithSpace().Replace("не имеет", string.Empty);
                 this.NameDocPosition = this.adapter.GetDocumentPosition(this.GetRowIndex(), nameCell.Col);
                 if (this.ColumnOrdering.ContainsField(DeclarationField.Occupation))
                 {
                     this.Occupation = this.GetDeclarationField(DeclarationField.Occupation).Text;
                 }
+
                 if (this.ColumnOrdering.ContainsField(DeclarationField.Department))
                 {
                     this.Department = this.GetDeclarationField(DeclarationField.Department).Text;
                 }
+
                 if (!DataHelper.IsEmptyValue(nameOrRelativeType))
                 {
                     if (DataHelper.IsRelativeInfo(nameOrRelativeType))
@@ -432,13 +458,15 @@ namespace Smart.Parser.Adapters
                     else
                     {
                         this.PersonName = nameOrRelativeType;
-                        if (!this.PersonName.Contains('.') && !this.PersonName.Trim().Any(char.IsWhiteSpace)) {
+                        if (!this.PersonName.Contains('.') && !this.PersonName.Trim().Any(char.IsWhiteSpace))
+                        {
                             Logger.Error("ignore bad person name " + this.PersonName);
                             return false;
                         }
                     }
                 }
             }
+
             return true;
         }
 
@@ -448,11 +476,11 @@ namespace Smart.Parser.Adapters
         private readonly int row;
         private Dictionary<DeclarationField, Cell> MappedHeader = null;
 
-        //Initialized by InitPersonData
-        public string PersonName = "";
-        public string RelativeType = "";
-        public string NameDocPosition = "";
-        public string Occupation = "";
+        // Initialized by InitPersonData
+        public string PersonName = string.Empty;
+        public string RelativeType = string.Empty;
+        public string NameDocPosition = string.Empty;
+        public string Occupation = string.Empty;
         public string Department = null;
     }
 }

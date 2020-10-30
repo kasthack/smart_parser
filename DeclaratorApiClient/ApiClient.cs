@@ -17,6 +17,7 @@ namespace TI.Declarator.DeclaratorApiClient
         private static HttpClient HttpClient { get; }
 
         private static string Username { get; }
+
         private static string Password { get; }
 
         static ApiClient()
@@ -31,6 +32,7 @@ namespace TI.Declarator.DeclaratorApiClient
             var basicAuthInfo = Convert.ToBase64String(authBytes);
             HttpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", basicAuthInfo);
         }
+
         public static void ReportUnknownEntry(UnknownEntry ue)
         {
             var jsonContents = MiscSerializer.Serialize(ue);

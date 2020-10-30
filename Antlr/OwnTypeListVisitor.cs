@@ -8,6 +8,7 @@ namespace SmartAntlr
         public GeneralAntlrParserWrapper Parser;
 
         public OwnTypeListVisitor(GeneralAntlrParserWrapper parser) => this.Parser = parser;
+
         public override object VisitOwn_type(OwnTypeList.Own_typeContext context)
         {
             var item = new GeneralParserPhrase(this.Parser, context);

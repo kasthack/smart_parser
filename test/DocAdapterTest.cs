@@ -1,5 +1,7 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+
 using Smart.Parser.Adapters;
+
 using System.IO;
 
 namespace test
@@ -11,7 +13,7 @@ namespace test
         public void AsposeDocAdapterTest()
         {
             var docFile = Path.Combine(TestUtil.GetTestDataPath(), "E - min_sport_2012_Rukovoditeli_gospredpriyatij,_podvedomstvennyih_ministerstvu.doc");
-            //IAdapter adapter = AsposeExcelAdapter.CreateAsposeExcelAdapter(xlsxFile);
+            // IAdapter adapter = AsposeExcelAdapter.CreateAsposeExcelAdapter(xlsxFile);
             var adapter = AsposeDocAdapter.CreateAdapter(docFile);
         }
     }

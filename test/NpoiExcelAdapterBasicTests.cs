@@ -12,10 +12,11 @@ namespace test
         private IAdapter GetAdapter()
         {
             var xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "Test.xlsx");
-            return  NpoiExcelAdapter.CreateAdapter(xlsxFile);
+            return NpoiExcelAdapter.CreateAdapter(xlsxFile);
         }
+
         /// <summary>
-        /// Read the contents of single non-merged cell
+        /// Read the contents of single non-merged cell.
         /// </summary>
         [TestMethod]
         public void GetNonMergedCell()
@@ -33,7 +34,7 @@ namespace test
         }
 
         /// <summary>
-        /// Get cell by its row and column numbers
+        /// Get cell by its row and column numbers.
         /// </summary>
         [TestMethod]
         public void GetCellByIndex()
@@ -51,7 +52,7 @@ namespace test
         }
 
         /// <summary>
-        /// Empty cells are the cells that contain nothing (except whitespace)
+        /// Empty cells are the cells that contain nothing (except whitespace).
         /// </summary>
         [TestMethod]
         public void GetEmptyCell()
@@ -61,7 +62,7 @@ namespace test
             var cell1 = adapter.GetCell(75, 2);
             Assert.IsNotNull(cell1);
             Assert.AreEqual(true, cell1.IsEmpty);
-            Assert.AreEqual("", cell1.Text);
+            Assert.AreEqual(string.Empty, cell1.Text);
 
             // A single empty cell that contains only (4) whitespace characters
             var cell2 = adapter.GetCell(0, 14);
@@ -71,7 +72,7 @@ namespace test
         }
 
         /// <summary>
-        /// Read the contents of a merged cell spanning several rows
+        /// Read the contents of a merged cell spanning several rows.
         /// </summary>
         [TestMethod]
         public void GetMergedCell()

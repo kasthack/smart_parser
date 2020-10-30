@@ -14,9 +14,9 @@ namespace test
         {
             var xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "fsin_2016_extract.xlsx");
             var adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
-            //Parser parser = new Parser(adapter);
+            // Parser parser = new Parser(adapter);
 
-            //parser.Process();
+            // parser.Process();
         }
     }
 }

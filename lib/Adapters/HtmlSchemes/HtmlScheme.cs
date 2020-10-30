@@ -9,21 +9,29 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
     {
         #region const
         protected Regex _intMatcher = new Regex(@"\d+", RegexOptions.Compiled);
+
         #endregion
-        public IDocument Document{ get; set; }
+        public IDocument Document { get; set; }
 
         public abstract IEnumerable<IElement> GetMembers(string name, string year);
+
         public abstract string GetTitle(string year);
+
         public abstract string GetMaxYear();
+
         public abstract List<int> GetYears();
+
         public abstract string GetPersonName();
+
         public abstract string GetMemberName(IElement memberElement);
+
         public abstract IElement GetTableFromMember(IElement memberElement);
+
         public abstract bool CanProcess(IDocument document);
 
         protected static string RemoveNewLineSymbols(string line)
         {
-            line = line.Replace("\n", "").Replace("\t", "");
+            line = line.Replace("\n", string.Empty).Replace("\t", string.Empty);
             return line;
         }
 

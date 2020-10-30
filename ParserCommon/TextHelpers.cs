@@ -10,7 +10,7 @@ namespace TI.Declarator.ParserCommon
 
         public static decimal ParseDecimalValue(this string val)
         {
-            var processedVal = Regex.Replace(val, @"\s+", "");
+            var processedVal = Regex.Replace(val, @"\s+", string.Empty);
             return !decimal.TryParse(processedVal, NumberStyles.Any, RussianCulture, out var res) && !decimal.TryParse(processedVal, NumberStyles.Any, CultureInfo.InvariantCulture, out res)
                 ? throw new Exception("can't parse value '" + processedVal + "' as decimal")
                 : res;
@@ -20,7 +20,7 @@ namespace TI.Declarator.ParserCommon
 
         /// <summary>
         /// Extracts a four-digit representation of year from given string
-        /// and converts it to an integer
+        /// and converts it to an integer.
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -71,7 +71,7 @@ namespace TI.Declarator.ParserCommon
 
         public static bool CanBePatronymic(string s)
         {
-            s = s.Replace("-", "");
+            s = s.Replace("-", string.Empty);
             if (s.Length == 0)
             {
                 return false;

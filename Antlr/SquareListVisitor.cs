@@ -10,6 +10,7 @@ namespace SmartAntlr
         public GeneralAntlrParserWrapper ParserWrapper;
 
         public SquareListVisitor(GeneralAntlrParserWrapper parser) => this.ParserWrapper = parser;
+
         public override object VisitBareScore(SquareList.BareScoreContext context)
         {
             var start = context.Start.StartIndex;

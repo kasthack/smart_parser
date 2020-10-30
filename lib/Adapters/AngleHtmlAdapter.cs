@@ -14,6 +14,7 @@ namespace Smart.Parser.Adapters
         public int DefaultFontSize = 10;
         public string DefaultFontName = "Times New Roman";
         public int DocumentPageSizeInPixels;
+
         public HtmlDocHolder(IDocument htmlDocument)
         {
             this.HtmlDocument = htmlDocument;
@@ -22,10 +23,10 @@ namespace Smart.Parser.Adapters
 
         public string FindTitleAboveTheTable()
         {
-            var title = "";
+            var title = string.Empty;
             var foundTable = false;
             var addedLines = new HashSet<string>();
-            foreach (var p in this.HtmlDocument.All.ToList() )
+            foreach (var p in this.HtmlDocument.All.ToList())
             {
                 if (p.TextContent.IsNullOrWhiteSpace())
                 {
@@ -57,12 +58,14 @@ namespace Smart.Parser.Adapters
                     {
                         foundTable = true;
                     }
+
                     if (!foundTable && p.LocalName == "p")
                     {
                         title += p.TextContent + " ";
                     }
                 }
             }
+
             return title;
         }
     }
@@ -96,7 +99,7 @@ namespace Smart.Parser.Adapters
         {
             this.Row = row;
             this.Col = column;
-            this.Text = "";
+            this.Text = string.Empty;
             this.IsEmpty = true;
             this.CellWidth = 0;
             this.MergedRowsCount = 1;
@@ -119,10 +122,12 @@ namespace Smart.Parser.Adapters
                 this.MergedColsCount = mergedColsCount;
                 this.IsMerged = this.MergedColsCount > 1;
             }
+
             if (inputCell.HasAttribute("rowspan") && int.TryParse(inputCell.GetAttribute("rowspan"), out mergedColsCount))
             {
                 this.MergedRowsCount = mergedColsCount;
             }
+
             if (inputCell.HasAttribute("width"))
             {
                 var s = inputCell.GetAttribute("width");
@@ -130,6 +135,7 @@ namespace Smart.Parser.Adapters
                 {
                     this.CellWidth = (int)(docHolder.DocumentPageSizeInPixels * (width / 100.0));
                 }
+
                 if (double.TryParse(s, out width))
                 {
                     this.CellWidth = (int)width;
@@ -153,16 +159,17 @@ namespace Smart.Parser.Adapters
 
         private void InitTextProperties(HtmlDocHolder docHolder, IElement inputCell)
         {
-            this.FontName = "";
+            this.FontName = string.Empty;
             this.FontSize = 0;
             var myFormatter = new MyMarkupFormatter();
-            //var myFormatter = new AngleSharp.Html.PrettyMarkupFormatter();
+            // var myFormatter = new AngleSharp.Html.PrettyMarkupFormatter();
             this.Text = inputCell.ToHtml(myFormatter);
             this.IsEmpty = this.Text.IsNullOrWhiteSpace();
             if (this.FontName == null || this.FontName?.Length == 0)
             {
                 this.FontName = docHolder.DefaultFontName;
             }
+
             if (this.FontSize == 0)
             {
                 this.FontSize = docHolder.DefaultFontSize;
@@ -179,7 +186,7 @@ namespace Smart.Parser.Adapters
 
         public static IDocument GetAngleDocument(string filename)
         {
-            //string text = File.ReadAllText(filenameS);
+            // string text = File.ReadAllText(filenameS);
             var config = Configuration.Default;
             using var fileStream = File.Open(filename, FileMode.Open);
             var context = BrowsingContext.New(config);
@@ -214,7 +221,7 @@ namespace Smart.Parser.Adapters
                 return;
             }
 
-            for ( ;start < end; ++start)
+            for (; start < end; ++start)
             {
                 var firstLine = this.TableRows[start];
                 for (var cellIndex = 0; cellIndex < firstLine.Count; ++cellIndex)
@@ -227,13 +234,14 @@ namespace Smart.Parser.Adapters
                             {
                                 break; // #-max-rows 100
                             }
+
                             var additCell = new HtmlAdapterCell(rowIndex, cellIndex)
                             {
                                 FirstMergedRow = start,
                                 MergedRowsCount = firstLine[cellIndex].MergedRowsCount - rowIndex,
-                                CellWidth = firstLine[cellIndex].CellWidth
+                                CellWidth = firstLine[cellIndex].CellWidth,
                             };
-                            if  (cellIndex < this.TableRows[rowIndex].Count)
+                            if (cellIndex < this.TableRows[rowIndex].Count)
                             {
                                 this.TableRows[rowIndex].Insert(cellIndex, additCell);
                             }
@@ -272,13 +280,16 @@ namespace Smart.Parser.Adapters
                     {
                         newRow.Add(new HtmlAdapterCell(this.TableRows.Count, sumspan + k));
                     }
+
                     sumspan += c.MergedColsCount;
                     isEmpty = isEmpty && c.IsEmpty;
                 }
+
                 if (isEmpty)
                 {
                     continue;
                 }
+
                 maxCellsCount = Math.Max(newRow.Count, maxCellsCount);
                 maxSumSpan = Math.Max(sumspan, maxSumSpan);
 
@@ -305,11 +316,12 @@ namespace Smart.Parser.Adapters
                     break;
                 }
             }
+
             if (saveRowsCount < this.TableRows.Count)
             {
-                if (maxCellsCount <=  4)
+                if (maxCellsCount <= 4)
                 {
-                    //remove this suspicious table 
+                    // remove this suspicious table
                     this.TableRows.RemoveRange(saveRowsCount, this.TableRows.Count - saveRowsCount);
                 }
                 else
@@ -326,31 +338,29 @@ namespace Smart.Parser.Adapters
         private void ProcessHtmlTableAndUpdateTitle(HtmlDocHolder docHolder, IElement table, int maxRowsToProcess, int tableIndex)
         {
             var debugSaveRowCount = this.TableRows.Count;
-            if (table.QuerySelectorAll("*").Where(m => m.LocalName=="table").ToList().Count > 0)
+            if (table.QuerySelectorAll("*").Where(m => m.LocalName == "table").ToList().Count > 0)
             {
-                Logger.Debug(string.Format("ignore table {0} with subtables", tableIndex));
+                Logger.Debug($"ignore table {tableIndex} with subtables");
             }
             else if (table.TextContent.Length > 0 && !table.TextContent.Any(x => char.IsUpper(x)))
             {
-                Logger.Debug(string.Format("ignore table {0} that has no uppercase char", tableIndex));
+                Logger.Debug($"ignore table {tableIndex} that has no uppercase char");
             }
             else if (table.TextContent.Length < 30)
             {
-                Logger.Debug(string.Format("ignore table {0}, it is too short", tableIndex));
+                Logger.Debug($"ignore table {tableIndex}, it is too short");
             }
             else
             {
                 this.ProcessHtmlTable(docHolder, table, maxRowsToProcess);
             }
+
             if (this.TableRows.Count > debugSaveRowCount)
             {
                 var tableText = table.TextContent.Length > 30 ? table.TextContent.Substring(0, 30).ReplaceEolnWithSpace() : table.TextContent.ReplaceEolnWithSpace();
-                Logger.Debug(string.Format("add {0} rows (TableRows.Count={1} ) from table {2} Table.innertText[0:30]='{3}'",
-                    this.TableRows.Count - debugSaveRowCount,
-                    this.TableRows.Count,
-                    tableIndex,
-                    tableText));
+                Logger.Debug($"add {this.TableRows.Count - debugSaveRowCount} rows (TableRows.Count={this.TableRows.Count} ) from table {tableIndex} Table.innertText[0:30]='{tableText}'");
             }
+
             if (this.Title.Length == 0 && table.TextContent.Length > 30 && table.TextContent.IndexOf("декабря", StringComparison.OrdinalIgnoreCase) != -1)
             {
                 var rows = new List<string>();
@@ -358,6 +368,7 @@ namespace Smart.Parser.Adapters
                 {
                     rows.Add(r.TextContent);
                 }
+
                 this.Title = string.Join("\n", rows);
             }
         }
@@ -372,6 +383,7 @@ namespace Smart.Parser.Adapters
                 this.ProcessHtmlTableAndUpdateTitle(docHolder, t, maxRowsToProcess, tableIndex);
                 tableIndex++;
             }
+
             this.TableRows = DropDayOfWeekRows(this.TableRows);
         }
 
@@ -382,12 +394,13 @@ namespace Smart.Parser.Adapters
             {
                 result.Add(r);
             }
+
             return result;
         }
 
         public override Cell GetCell(int row, int column)
         {
-            var cellNo = FindMergedCellByColumnNo<HtmlAdapterCell>(this.TableRows, row, column);
+            var cellNo = FindMergedCellByColumnNo(this.TableRows, row, column);
             return cellNo == -1 ? null : (Cell)this.TableRows[row][cellNo];
         }
 

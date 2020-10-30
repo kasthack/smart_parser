@@ -9,8 +9,8 @@ using Antlr4.Runtime.Tree;
 
 public class GeneralParserPhrase
 {
-    private readonly string TextFromLexer = "";
-    private readonly string SourceText = "";
+    private readonly string TextFromLexer = string.Empty;
+    private readonly string SourceText = string.Empty;
 
     public GeneralParserPhrase(GeneralAntlrParserWrapper parser, ParserRuleContext context)
     {
@@ -18,26 +18,27 @@ public class GeneralParserPhrase
         this.TextFromLexer = context.GetText();
     }
 
-    virtual public string GetJsonString()
+    public virtual string GetJsonString()
     {
         var my_jsondata = new Dictionary<string, string>
             {
-                { "value", this.TextFromLexer}
+                { "value", this.TextFromLexer },
             };
         return JsonConvert.SerializeObject(my_jsondata, Formatting.Indented);
     }
 
     public string GetText() => this.TextFromLexer;
+
     public string GetSourceText() => this.SourceText;
 }
 
 public class RealtyFromText : GeneralParserPhrase
 {
-    public string OwnType = "";
-    public string RealtyType = "";
+    public string OwnType = string.Empty;
+    public string RealtyType = string.Empty;
     public decimal Square = -1;
-    public string RealtyShare = "";
-    public string Country = "";
+    public string RealtyShare = string.Empty;
+    public string Country = string.Empty;
 
     public bool IsEmpty() => this.Square == -1 && this.OwnType.Length == 0 && this.RealtyType.Length == 0 && this.RealtyShare.Length == 0 &&
             this.Country.Length == 0;
@@ -48,35 +49,39 @@ public class RealtyFromText : GeneralParserPhrase
 
     public void InitializeSquare(string strVal, bool hectare)
     {
-        if (strVal != "")
+        if (strVal != string.Empty)
         {
             this.Square = strVal.ParseDecimalValue();
             if (hectare)
             {
                 this.Square *= 10000;
             }
+
             if (this.Square == 0)
             {
                 this.Square = -1;
             }
         }
     }
+
     public override string GetJsonString()
     {
         var my_jsondata = new Dictionary<string, string>
             {
-                { "OwnType", this.OwnType},
-                { "RealtyType",  this.RealtyType},
-                { "Square", this.Square.ToString()}
+                { "OwnType", this.OwnType },
+                { "RealtyType",  this.RealtyType },
+                { "Square", this.Square.ToString() },
             };
-        if (this.RealtyShare != "")
+        if (this.RealtyShare != string.Empty)
         {
             my_jsondata["RealtyShare"] = this.RealtyShare;
         }
-        if (this.Country != "")
+
+        if (this.Country != string.Empty)
         {
             my_jsondata["Country"] = this.Country;
         }
+
         return JsonConvert.SerializeObject(my_jsondata, Formatting.Indented);
     }
 }
@@ -88,6 +93,7 @@ public abstract class GeneralAntlrParserWrapper
     protected TextWriter Output = TextWriter.Null;
     protected TextWriter ErrorOutput = TextWriter.Null;
     public Parser Parser = null;
+
     public GeneralAntlrParserWrapper(bool silent = true)
     {
         if (!silent)
@@ -95,6 +101,7 @@ public abstract class GeneralAntlrParserWrapper
             this.BeVerbose();
         }
     }
+
     public void BeVerbose()
     {
         this.Output = Console.Out;
@@ -112,6 +119,7 @@ public abstract class GeneralAntlrParserWrapper
         var lexer = this.CreateLexer(inputStream);
         this.CommonTokenStream = new CommonTokenStream(lexer);
     }
+
     public abstract List<GeneralParserPhrase> Parse(string inputText);
 
     public List<string> ParseToJson(string inputText)
@@ -124,6 +132,7 @@ public abstract class GeneralAntlrParserWrapper
                 result.Add(i.GetJsonString());
             }
         }
+
         return result;
     }
 
@@ -134,12 +143,13 @@ public abstract class GeneralAntlrParserWrapper
         {
             foreach (var item in this.Parse(inputText))
             {
-                if (item.GetText() != "")
+                if (item.GetText() != string.Empty)
                 {
                     result.Add(item.GetText());
                 }
             }
         }
+
         return result;
     }
 
@@ -151,8 +161,10 @@ public abstract class GeneralAntlrParserWrapper
         {
             end = context.Stop.StopIndex + 1;
         }
+
         return end > start ? this.InputTextCaseSensitive[start..end] : context.GetText();
     }
+
     public string GetSourceTextByTerminalNode(ITerminalNode node)
     {
         var start = node.Symbol.StartIndex;
@@ -170,7 +182,8 @@ public class AntlrCommon
         {
             lines.Add(line + "\n");
         }
-        var text = "";
+
+        var text = string.Empty;
         var texts = new List<string>();
 
         for (var i = 0; i < lines.Count; ++i)
@@ -185,16 +198,19 @@ public class AntlrCommon
                 {
                     texts.Add(text);
                 }
-                text = "";
+
+                text = string.Empty;
             }
         }
+
         return texts;
     }
+
     public static void WriteTestCaseResultsToFile(GeneralAntlrParserWrapper parser, List<string> texts, string outputPath)
     {
         using var outputFile = new StreamWriter(outputPath)
         {
-            NewLine = "\n"
+            NewLine = "\n",
         };
         foreach (var text in texts)
         {
@@ -203,7 +219,8 @@ public class AntlrCommon
             {
                 outputFile.WriteLine(realtyStr.Replace("\r", string.Empty));
             }
-            outputFile.WriteLine("");
+
+            outputFile.WriteLine(string.Empty);
         }
     }
 }

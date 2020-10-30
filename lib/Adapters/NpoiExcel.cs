@@ -21,6 +21,7 @@ namespace Smart.Parser.Adapters
         private readonly Cell EmptyCell;
         private int MaxRowsToProcess;
         private readonly string TempFileName;
+
 #if WIN64
         string ConvertFile2TempXlsX(string filename)
         {
@@ -55,7 +56,7 @@ namespace Smart.Parser.Adapters
 #endif
             var file = new StreamReader(Path.GetFullPath(fileName));
             this.WorkBook = new XSSFWorkbook(file.BaseStream);
-            //WorkBook = new XSSFWorkbook(Path.GetFullPath(fileName));
+            // WorkBook = new XSSFWorkbook(Path.GetFullPath(fileName));
             this.EmptyCell = new Cell();
             this.MaxRowsToProcess = maxRowsToProcess;
 
@@ -98,36 +99,47 @@ namespace Smart.Parser.Adapters
 
             return result;
         }
+
         public class CellAddress
         {
             public int row { get; set; }
+
             public int column { get; set; }
-            public override int GetHashCode() => (this.row * 100) + this.column; //maximal 100 columns in excel 
+
+            public override int GetHashCode() => (this.row * 100) + this.column; // maximal 100 columns in excel
+
             public override bool Equals(object obj) => this.Equals(obj as CellAddress);
+
             public bool Equals(CellAddress obj) => obj != null && obj.row == this.row && obj.column == this.column;
         }
+
         private readonly Dictionary<CellAddress, Cell> Cache = new Dictionary<CellAddress, Cell>();
+
         private void InvalidateCache() => this.Cache.Clear();
+
         public override Cell GetCell(int row, int column)
         {
-            var address = new CellAddress{row=row, column=column};
+            var address = new CellAddress { row = row, column = column };
             if (this.Cache.ContainsKey(address))
             {
                 return this.Cache[address];
             }
+
             var c = this.GetCellWithoutCache(row, column);
             this.Cache[address] = c;
             return c;
         }
+
         private Cell GetCellWithoutCache(int row, int column)
         {
             var defaultSheet = this.WorkBook.GetSheetAt(this.SheetIndex);
             var currentRow = defaultSheet.GetRow(row);
             if (currentRow == null)
             {
-                //null if row contains only empty cells
+                // null if row contains only empty cells
                 return this.EmptyCell;
             }
+
             var cell = currentRow.GetCell(column);
             if (cell == null)
             {
@@ -157,7 +169,7 @@ namespace Smart.Parser.Adapters
             for (var i = 0; i < mergedColsCount; i++)
             {
                 cellWidth += defaultSheet.GetColumnWidth(column + i);
-                //   to do npoi
+                // to do npoi
             }
 
             return new Cell
@@ -171,14 +183,15 @@ namespace Smart.Parser.Adapters
                 Text = cellContents,
                 Row = row,
                 Col = column,
-                CellWidth = cellWidth
+                CellWidth = cellWidth,
             };
         }
 
         private void TrimEmptyLines()
         {
             var row = this.GetRowsCount() - 1;
-            while (row >= 0 && this.IsEmptyRow(row)) {
+            while (row >= 0 && this.IsEmptyRow(row))
+            {
                 this.MaxRowsToProcess = row;
                 row--;
             }
@@ -216,6 +229,7 @@ namespace Smart.Parser.Adapters
 
             throw new Exception($"Could not find merged region containing cell at row#{cell.RowIndex}, column#{cell.ColumnIndex}");
         }
+
         public override int GetWorkSheetCount() => this.GetWorkSheetCount(out var curIndex);
 
         public int GetWorkSheetCount(out int curSheetIndex)
@@ -236,9 +250,10 @@ namespace Smart.Parser.Adapters
                     worksheetCount++;
                 }
             }
+
             if (worksheetCount == 0)
             {
-                throw new Exception(string.Format("Excel sheet {0} has no visible worksheets", this.DocumentFile));
+                throw new Exception($"Excel sheet {this.DocumentFile} has no visible worksheets");
             }
 
             this.SheetIndex = curSheetIndex;
@@ -251,7 +266,7 @@ namespace Smart.Parser.Adapters
             var count = 0;
             var i = 0;
             var found = false;
-            for ( ; i < this.WorkBook.NumberOfSheets; i++)
+            for (; i < this.WorkBook.NumberOfSheets; i++)
             {
                 var hidden = this.WorkBook.IsSheetHidden(i);
                 var ws = this.WorkBook[i];
@@ -264,13 +279,16 @@ namespace Smart.Parser.Adapters
                         found = true;
                         break;
                     }
+
                     count++;
                 }
             }
+
             if (!found)
             {
                 throw new SmartParserException("wrong  sheet index");
             }
+
             this.WorkBook.SetActiveSheet(this.SheetIndex);
             this.InvalidateCache();
         }

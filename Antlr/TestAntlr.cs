@@ -16,10 +16,11 @@ namespace test
             var culture = new System.Globalization.CultureInfo("ru-RU");
             Thread.CurrentThread.CurrentCulture = culture;
         }
+
         private static bool FileEquals(string path1, string path2)
         {
-            var text1 = File.ReadAllText(path1, Encoding.UTF8).Replace("\r","") ;
-            var text2 = File.ReadAllText(path2, Encoding.UTF8).Replace("\r","");
+            var text1 = File.ReadAllText(path1, Encoding.UTF8).Replace("\r", string.Empty);
+            var text2 = File.ReadAllText(path2, Encoding.UTF8).Replace("\r", string.Empty);
             return text1 == text2;
         }
 
@@ -30,6 +31,7 @@ namespace test
             {
                 curDir = Path.GetDirectoryName(curDir);
             }
+
             return curDir.Length <= 3 ? throw new Exception("cannot find folder with test_files") : Path.Join(curDir, "test_files");
         }
 
@@ -50,6 +52,7 @@ namespace test
 
         [TestMethod]
         public void CountryList() => this.TestCase(new AntlrCountryListParser(), "country_list.txt");
+
         [TestMethod]
         public void SquareList() => this.TestCase(new AntlrSquareParser(), "square_list.txt");
 
@@ -58,7 +61,7 @@ namespace test
         {
             var parser = new AntlrStrictParser
             {
-                StartFromRoot = AntlrStrictParser.StartFromRootEnum.square_and_country
+                StartFromRoot = AntlrStrictParser.StartFromRootEnum.square_and_country,
             };
             this.TestCase(parser, "square_and_country.txt");
         }

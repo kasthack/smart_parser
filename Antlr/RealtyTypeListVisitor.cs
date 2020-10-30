@@ -8,6 +8,7 @@ namespace SmartAntlr
         public GeneralAntlrParserWrapper Parser;
 
         public RealtyTypeListVisitor(GeneralAntlrParserWrapper parser) => this.Parser = parser;
+
         public override object VisitRealty_type(RealtyTypeList.Realty_typeContext context)
         {
             var item = new GeneralParserPhrase(this.Parser, context);

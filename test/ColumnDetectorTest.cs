@@ -59,9 +59,9 @@ namespace test
         {
             var xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "fsin_2016_extract.xlsx");
 
-            //IAdapter adapter = NpoiExcelAdapter.CreateAdapter(xlsxFile);
+            // IAdapter adapter = NpoiExcelAdapter.CreateAdapter(xlsxFile);
             // aspose do not want to read column widthes from this file, use aspose
-            // fix it in the future (is it a bug in Npoi library?).  
+            // fix it in the future (is it a bug in Npoi library?).
 
             var adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
 

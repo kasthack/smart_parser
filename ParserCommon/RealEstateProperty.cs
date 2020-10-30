@@ -2,17 +2,22 @@
 {
     public class RealEstateProperty
     {
-        public decimal? square { set; get; }
+        public decimal? square { get; set; }
 
-        public string square_raw { set; get; }
-        public string country_raw { set; get; }
-        public string type_raw { set; get; }
-        public string own_type_raw { set; get; }
-        public string own_type_by_column { set; get; }
+        public string square_raw { get; set; }
 
-        public string Text { set; get; }
+        public string country_raw { get; set; }
+
+        public string type_raw { get; set; }
+
+        public string own_type_raw { get; set; }
+
+        public string own_type_by_column { get; set; }
+
+        public string Text { get; set; }
 
         public RealEstateProperty()
-        {}
+        {
+        }
     }
 }

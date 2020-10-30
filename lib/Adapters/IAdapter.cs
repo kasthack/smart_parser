@@ -18,54 +18,55 @@ namespace Smart.Parser.Adapters
         // specific scheme to parse tables
         public IAdapterScheme CurrentScheme = null;
 
-        public static string ConvertedFileStorageUrl = "";
+        public static string ConvertedFileStorageUrl = string.Empty;
 
         public virtual bool IsExcel() => false;
 
         public virtual string GetDocumentPosition(int row, int col) => null;
+
         public string GetDocumentPositionExcel(int row, int col) => "R" + (row + 1).ToString() + "C" + (col + 1).ToString();
 
-        abstract public Cell GetCell(int row, int column);
+        public abstract Cell GetCell(int row, int column);
+
         public virtual List<Cell> GetCells(int row, int maxColEnd = MaxColumnsCount) => throw new NotImplementedException();
 
         public DataRow GetRow(ColumnOrdering columnOrdering, int row) => new DataRow(this, columnOrdering, row);
 
         // напрямую используется, пока ColumnOrdering еще не построен
         // во всех остальных случаях надо использовать Row.GetDeclarationField
-        virtual public Cell GetDeclarationFieldWeak(ColumnOrdering columnOrdering, int row, DeclarationField field, out TColumnInfo colSpan)
+        public virtual Cell GetDeclarationFieldWeak(ColumnOrdering columnOrdering, int row, DeclarationField field, out TColumnInfo colSpan)
         {
             if (!columnOrdering.ColumnOrder.TryGetValue(field, out colSpan))
             {
-                throw new SmartParserFieldNotFoundException(string.Format("Field {0} not found, row={1}", field.ToString(), row));
+                throw new SmartParserFieldNotFoundException($"Field {field.ToString()} not found, row={row}");
             }
 
             var exactCell = this.GetCell(row, colSpan.BeginColumn);
             if (exactCell == null)
             {
                 var rowData = this.GetCells(row);
-                throw new SmartParserFieldNotFoundException(string.Format("Field {0} not found, row={1}, col={2}. Row.Cells.Count = {3}",
-                    field.ToString(),
-                    row,
-                    colSpan.BeginColumn,
-                    rowData.Count
-                    ));
+                throw new SmartParserFieldNotFoundException($"Field {field} not found, row={row}, col={colSpan.BeginColumn}. Row.Cells.Count = {rowData.Count}");
             }
+
             return exactCell;
         }
 
-        abstract public int GetRowsCount();
-        abstract public int GetColsCount();
+        public abstract int GetRowsCount();
+
+        public abstract int GetColsCount();
 
         public virtual string GetTitleOutsideTheTable() => throw new NotImplementedException();
 
-        public string DocumentFile { set; get; }
+        public string DocumentFile { get; set; }
 
         public virtual int GetWorkSheetCount() => 1;
+
         public virtual int GetTablesCount() => this.GetWorkSheetCount();
 
         public virtual void SetCurrentWorksheet(int sheetIndex) => throw new NotImplementedException();
 
         public virtual string GetWorksheetName() => null;
+
         public bool IsEmptyRow(int rowIndex)
         {
             foreach (var cell in this.GetCells(rowIndex))
@@ -75,8 +76,10 @@ namespace Smart.Parser.Adapters
                     return false;
                 }
             }
+
             return true;
         }
+
         public int GetUnmergedColumnsCountByFirstRow()
         {
             if (this.GetRowsCount() == 0)
@@ -89,6 +92,7 @@ namespace Smart.Parser.Adapters
             {
                 sum += c.MergedColsCount;
             }
+
             return sum;
         }
 
@@ -106,12 +110,14 @@ namespace Smart.Parser.Adapters
 
                 sumspan += span;
             }
+
             return -1;
         }
+
         protected static List<List<T>> DropDayOfWeekRows<T>(List<List<T>> tableRows) where T : Cell
         {
             var daysOfWeek = new List<string> { "пн", "вт", "ср", "чт", "пт", "сб", "вс" };
-            return  tableRows.TakeWhile(x => !x.All(y => daysOfWeek.Contains(y.Text.ToLower().Trim()))).ToList();
+            return tableRows.TakeWhile(x => !x.All(y => daysOfWeek.Contains(y.Text.ToLower().Trim()))).ToList();
         }
 
         protected static bool CheckNameColumnIsEmpty<T>(List<List<T>> tableRows, int start) where T : Cell
@@ -134,6 +140,7 @@ namespace Smart.Parser.Adapters
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -176,34 +183,39 @@ namespace Smart.Parser.Adapters
                     mr = c.MergedRowsCount,
                     r = c.Row,
                     c = c.Col,
-                    t = c.Text
+                    t = c.Text,
                 };
                 outputList.Add(jc);
             }
+
             return outputList;
         }
 
         private string GetHtmlByRow(List<Cell> row, int rowIndex)
         {
-            var res = string.Format("<tr rowindex={0}>\n", rowIndex);
+            var res = $"<tr rowindex={rowIndex}>\n";
             foreach (var c in row)
             {
                 if (c.FirstMergedRow != rowIndex)
                 {
                     continue;
                 }
+
                 res += "\t<td";
                 if (c.MergedColsCount > 1)
                 {
-                    res += string.Format(" colspan={0}", c.MergedColsCount);
+                    res += $" colspan={c.MergedColsCount}";
                 }
+
                 if (c.MergedRowsCount > 1)
                 {
-                    res += string.Format(" rowspan={0}", c.MergedRowsCount);
+                    res += $" rowspan={c.MergedRowsCount}";
                 }
+
                 var text = c.Text.Replace("\n", "<br/>");
                 res += ">" + text + "</td>\n";
             }
+
             res += "</tr>\n";
             return res;
         }
@@ -212,10 +224,10 @@ namespace Smart.Parser.Adapters
         {
             var table = new TJsonTablePortion
             {
-                DataStart = body_start
+                DataStart = body_start,
             };
             var headerEnd = columnOrdering.GetPossibleHeaderEnd();
-            for (var i= columnOrdering.GetPossibleHeaderBegin();  i < columnOrdering.GetPossibleHeaderEnd(); i++)
+            for (var i = columnOrdering.GetPossibleHeaderBegin(); i < columnOrdering.GetPossibleHeaderEnd(); i++)
             {
                 var row = this.GetJsonByRow(this.GetCells(i));
                 table.Header.Add(row);
@@ -243,19 +255,22 @@ namespace Smart.Parser.Adapters
                     table.Data.Add(this.GetJsonByRow(this.GetCells(table.DataEnd)));
                     addedRows++;
                 }
+
                 table.DataEnd++;
             }
+
             return table;
         }
 
-        public void WriteHtmlFile( string htmlFileName)
+        public void WriteHtmlFile(string htmlFileName)
         {
-            using var file = new System.IO.StreamWriter(htmlFileName);
+            using var file = new StreamWriter(htmlFileName);
             file.WriteLine("<html><table border=1>");
             for (var i = 0; i < this.GetRowsCount(); i++)
             {
                 file.WriteLine(this.GetHtmlByRow(this.GetCells(i), i));
             }
+
             file.WriteLine("</table></html>");
         }
 
@@ -276,8 +291,10 @@ namespace Smart.Parser.Adapters
                     var value = this.GetCell(r, c).Text;
                     csv.WriteField(value);
                 }
+
                 csv.NextRecord();
             }
+
             csv.Flush();
         }
 

@@ -15,7 +15,7 @@ namespace test
             var co = new ColumnOrdering();
             var s = new TColumnInfo
             {
-                Field = DeclarationField.NameOrRelativeType
+                Field = DeclarationField.NameOrRelativeType,
             };
             co.Add(s);
             JsonWriter.WriteJson("co.json", co);

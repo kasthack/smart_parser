@@ -57,7 +57,7 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
 
             var tables = this.Document.Descendants<Table>().ToList();
 
-            var lastTableProcessor = "";
+            var lastTableProcessor = string.Empty;
             Table lastTable;
 
             foreach (var table in tables)
@@ -145,14 +145,14 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
         private void ParseVehicleTable(Table table, PublicServant person)
         {
             var rows = table.Descendants<TableRow>().ToList().Skip(1);
-            var currentVehicleType = "";
+            var currentVehicleType = string.Empty;
             foreach (var row in rows)
             {
                 var cells = row.Descendants<TableCell>().ToList();
                 var text = cells[0].InnerText;
 
                 var gridSpan = cells[0].TableCellProperties.GetFirstChild<GridSpan>();
-                var mergedColsCount = (gridSpan == null) ? 1 : (int) gridSpan.Val;
+                var mergedColsCount = (gridSpan == null) ? 1 : (int)gridSpan.Val;
                 if (mergedColsCount > 1)
                 {
                     currentVehicleType = text;
@@ -219,7 +219,7 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
                     {
                         RelationType = relationType,
                         DeclaredYearlyIncomeRaw = incomeRaw,
-                        DeclaredYearlyIncome = DataHelper.ParseDeclaredIncome(incomeRaw, false)
+                        DeclaredYearlyIncome = DataHelper.ParseDeclaredIncome(incomeRaw, false),
                     };
                     person.AddRelative(relative);
                 }
@@ -229,12 +229,12 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
         private void ParseRealEstateTable(Table table, PublicServant person, string ownTypeByColumn)
         {
             var rows = table.Descendants<TableRow>().ToList().Skip(1);
-            var currentRealEstateType = "";
+            var currentRealEstateType = string.Empty;
             foreach (var row in rows)
             {
                 var cells = row.Descendants<TableCell>().ToList();
                 var gridSpan = cells[0].TableCellProperties.GetFirstChild<GridSpan>();
-                var mergedColsCount = (gridSpan == null) ? 1 : (int) gridSpan.Val;
+                var mergedColsCount = (gridSpan == null) ? 1 : (int)gridSpan.Val;
                 var text = cells[0].InnerText;
 
                 if (mergedColsCount > 1)
@@ -278,7 +278,7 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
                         type_raw = currentRealEstateType,
                         square_raw = ParserBase.NormalizeRawDecimalForTest(areaStr),
                         country_raw = DataHelper.ParseCountry(countryStr),
-                        own_type_by_column = ownTypeByColumn
+                        own_type_by_column = ownTypeByColumn,
                     };
 
                     if (share != default)
@@ -310,7 +310,7 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
 
             var relative = new Relative
             {
-                RelationType = relationType
+                RelationType = relationType,
             };
             person.AddRelative(relative);
             return relative;
@@ -322,14 +322,14 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
             {
                 NameRaw = this.GetPersonName(),
                 Ordering = columnOrdering,
-                Index = 1
+                Index = 1,
             };
             return currentDeclarant;
         }
 
         public string FindTitleAboveTheTable()
         {
-            var title = "";
+            var title = string.Empty;
             var body = this.Document.Body;
             foreach (var p in this.Document.Descendants<Paragraph>())
             {

@@ -16,10 +16,26 @@ namespace Smart.Parser.Lib
 
         private string GetRealtyTypeFromColumnTitle(DeclarationField fieldName)
         {
-            if ((fieldName & DeclarationField.LandArea) > 0) { return "земельный участок"; }
-            if ((fieldName & DeclarationField.LivingHouse) > 0) { return "земельный участок"; }
-            if ((fieldName & DeclarationField.Appartment) > 0) { return "квартира"; }
-            if ((fieldName & DeclarationField.SummerHouse) > 0) { return "дача"; }
+            if ((fieldName & DeclarationField.LandArea) > 0)
+            {
+                return "земельный участок";
+            }
+
+            if ((fieldName & DeclarationField.LivingHouse) > 0)
+            {
+                return "земельный участок";
+            }
+
+            if ((fieldName & DeclarationField.Appartment) > 0)
+            {
+                return "квартира";
+            }
+
+            if ((fieldName & DeclarationField.SummerHouse) > 0)
+            {
+                return "дача";
+            }
+
             return (fieldName & DeclarationField.Garage) > 0 ? "гараж" : null;
         }
 
@@ -31,7 +47,7 @@ namespace Smart.Parser.Lib
                 {
                     Text = bulletText,
                     type_raw = realtyTypeFromColumnTitle,
-                    own_type_by_column = ownTypeByColumn
+                    own_type_by_column = ownTypeByColumn,
                 };
                 var match = Regex.Match(bulletText, ".*\\s(\\d+[.,]\\d+)\\sкв.м", RegexOptions.IgnoreCase);
                 if (match.Success)
@@ -48,6 +64,7 @@ namespace Smart.Parser.Lib
                 person.RealEstateProperties.Add(realEstateProperty);
             }
         }
+
         private void ParseRealtiesByAntlr(string ownTypeByColumn, string cellText, Person person)
         {
             var parser = new AntlrStrictParser();
@@ -63,8 +80,8 @@ namespace Smart.Parser.Lib
                         square = realty.Square,
                         country_raw = realty.Country,
                         own_type_raw = realty.OwnType,
-                        //???  = realty.RealtyShare; // nowhere to write to
-                        own_type_by_column = ownTypeByColumn
+                        // ???  = realty.RealtyShare; // nowhere to write to
+                        own_type_by_column = ownTypeByColumn,
                     };
                     person.RealEstateProperties.Add(realEstateProperty);
                 }
@@ -78,15 +95,20 @@ namespace Smart.Parser.Lib
                 fieldName |= DeclarationField.MainDeclarant;
             }
 
-            if (!currRow.ColumnOrdering.ContainsField(fieldName)) {
+            if (!currRow.ColumnOrdering.ContainsField(fieldName))
+            {
                 return;
             }
-            var text = currRow.GetContents(fieldName).Trim().Replace("не имеет", "").Trim();
-            if (DataHelper.IsEmptyValue(text) || text == "0") {
+
+            var text = currRow.GetContents(fieldName).Trim().Replace("не имеет", string.Empty).Trim();
+            if (DataHelper.IsEmptyValue(text) || text == "0")
+            {
                 return;
             }
+
             var realtyType = this.GetRealtyTypeFromColumnTitle(fieldName);
-            if (realtyType != null) {
+            if (realtyType != null)
+            {
                 this.ParseRealtiesDistributedByColumns(ownTypeByColumn, realtyType, text, person);
             }
             else
@@ -97,11 +119,12 @@ namespace Smart.Parser.Lib
 
         public bool OneCellContainsManyValues(string squareStr, string countryStr)
         {
-            if (countryStr != "" && new AntlrCountryListParser().ParseToStringList(countryStr).Count > 1)
+            if (countryStr != string.Empty && new AntlrCountryListParser().ParseToStringList(countryStr).Count > 1)
             {
                 // может быть одна страна на все объекты недвижимости
                 return true;
             }
+
             return GetLinesStaringWithNumbers(squareStr).Count > 1;
         }
 
@@ -112,14 +135,16 @@ namespace Smart.Parser.Lib
                 this.AddRealEstateWithNaturalText(currRow, DeclarationField.OwnedColumnWithNaturalText, OwnedString, person);
                 return;
             }
-            var estateTypeStr = currRow.GetContents(DeclarationField.OwnedRealEstateType).Replace("не имеет", "");
+
+            var estateTypeStr = currRow.GetContents(DeclarationField.OwnedRealEstateType).Replace("не имеет", string.Empty);
             string ownTypeStr = null;
             if (currRow.ColumnOrdering.OwnershipTypeInSeparateField)
             {
-                ownTypeStr = currRow.GetContents(DeclarationField.OwnedRealEstateOwnershipType).Replace("не имеет", "");
+                ownTypeStr = currRow.GetContents(DeclarationField.OwnedRealEstateOwnershipType).Replace("не имеет", string.Empty);
             }
-            var squareStr = currRow.GetContents(DeclarationField.OwnedRealEstateSquare).Replace("не имеет", "");
-            var countryStr = currRow.GetContents(DeclarationField.OwnedRealEstateCountry, false).Replace("не имеет", "");
+
+            var squareStr = currRow.GetContents(DeclarationField.OwnedRealEstateSquare).Replace("не имеет", string.Empty);
+            var countryStr = currRow.GetContents(DeclarationField.OwnedRealEstateCountry, false).Replace("не имеет", string.Empty);
 
             try
             {
@@ -137,6 +162,7 @@ namespace Smart.Parser.Lib
                 Logger.Error("***ERROR row({0}) {1}", currRow.Cells[0].Row, e.Message);
             }
         }
+
         public void ParseRealtiesWithTypesInTitles(DataRow currRow, Person person)
         {
             if (currRow.ColumnOrdering.ContainsField(DeclarationField.MixedLandAreaSquare))
@@ -144,13 +170,17 @@ namespace Smart.Parser.Lib
                 var squareStr = currRow.GetContents(DeclarationField.MixedLandAreaSquare);
             }
         }
+
         public void ParseMixedProperty(DataRow currRow, Person person)
         {
-            DeclarationField[] fieldWithRealTypes = { DeclarationField.MixedLandAreaSquare,
-                                                      DeclarationField.MixedLivingHouseSquare,
-                                                      DeclarationField.MixedAppartmentSquare,
-                                                      DeclarationField.MixedSummerHouseSquare,
-                                                      DeclarationField.MixedGarageSquare };
+            DeclarationField[] fieldWithRealTypes =
+            {
+                DeclarationField.MixedLandAreaSquare,
+                DeclarationField.MixedLivingHouseSquare,
+                DeclarationField.MixedAppartmentSquare,
+                DeclarationField.MixedSummerHouseSquare,
+                DeclarationField.MixedGarageSquare,
+            };
             foreach (var f in fieldWithRealTypes)
             {
                 if (!currRow.ColumnOrdering.ContainsField(DeclarationField.MixedRealEstateSquare))
@@ -165,10 +195,10 @@ namespace Smart.Parser.Lib
                 return;
             }
 
-            var estateTypeStr = currRow.GetContents(DeclarationField.MixedRealEstateType).Replace("не имеет", "");
-            var squareStr = currRow.GetContents(DeclarationField.MixedRealEstateSquare).Replace("не имеет", "");
-            var countryStr = currRow.GetContents(DeclarationField.MixedRealEstateCountry).Replace("не имеет", "");
-            var owntypeStr = currRow.GetContents(DeclarationField.MixedRealEstateOwnershipType, false).Replace("не имеет", "");
+            var estateTypeStr = currRow.GetContents(DeclarationField.MixedRealEstateType).Replace("не имеет", string.Empty);
+            var squareStr = currRow.GetContents(DeclarationField.MixedRealEstateSquare).Replace("не имеет", string.Empty);
+            var countryStr = currRow.GetContents(DeclarationField.MixedRealEstateCountry).Replace("не имеет", string.Empty);
+            var owntypeStr = currRow.GetContents(DeclarationField.MixedRealEstateOwnershipType, false).Replace("не имеет", string.Empty);
             if (owntypeStr?.Length == 0)
             {
                 owntypeStr = null;
@@ -191,7 +221,7 @@ namespace Smart.Parser.Lib
             }
         }
 
-        static public void SwapCountryAndSquare(ref string squareStr, ref string countryStr)
+        public static void SwapCountryAndSquare(ref string squareStr, ref string countryStr)
         {
             if ((squareStr.ToLower().Trim() == "россия" ||
                  squareStr.ToLower().Trim() == "рф") &&
@@ -210,14 +240,16 @@ namespace Smart.Parser.Lib
                 this.AddRealEstateWithNaturalText(currRow, DeclarationField.StateColumnWithNaturalText, StateString, person);
                 return;
             }
-            var statePropTypeStr = currRow.GetContents(DeclarationField.StatePropertyType, false).Replace("не имеет", "");
+
+            var statePropTypeStr = currRow.GetContents(DeclarationField.StatePropertyType, false).Replace("не имеет", string.Empty);
             if (DataHelper.IsEmptyValue(statePropTypeStr))
             {
                 return;
             }
-            var ownershipTypeStr = currRow.GetContents(DeclarationField.StatePropertyOwnershipType, false).Replace("не имеет", "");
-            var squareStr = currRow.GetContents(DeclarationField.StatePropertySquare).Replace("не имеет", "");
-            var countryStr = currRow.GetContents(DeclarationField.StatePropertyCountry, false).Replace("не имеет", "");
+
+            var ownershipTypeStr = currRow.GetContents(DeclarationField.StatePropertyOwnershipType, false).Replace("не имеет", string.Empty);
+            var squareStr = currRow.GetContents(DeclarationField.StatePropertySquare).Replace("не имеет", string.Empty);
+            var countryStr = currRow.GetContents(DeclarationField.StatePropertyCountry, false).Replace("не имеет", string.Empty);
 
             SwapCountryAndSquare(ref squareStr, ref countryStr);
 
@@ -247,7 +279,8 @@ namespace Smart.Parser.Lib
             }
         }
 
-        static public void ParseStatePropertySingleRow(string statePropTypeStr,
+        public static void ParseStatePropertySingleRow(
+            string statePropTypeStr,
             string statePropOwnershipTypeStr,
             string statePropSquareStr,
             string statePropCountryStr,
@@ -260,16 +293,17 @@ namespace Smart.Parser.Lib
             {
                 return;
             }
+
             var stateProperty = new RealEstateProperty
             {
                 Text = statePropTypeStr,
                 type_raw = statePropTypeStr,
-                square = DataHelper.ParseSquare(statePropSquareStr)
+                square = DataHelper.ParseSquare(statePropSquareStr),
             };
 
             stateProperty.square_raw = NormalizeRawDecimalForTest(statePropSquareStr);
             stateProperty.country_raw = DataHelper.ParseCountry(statePropCountryStr);
-            if (statePropOwnershipTypeStr != "")
+            if (statePropOwnershipTypeStr != string.Empty)
             {
                 stateProperty.own_type_raw = statePropOwnershipTypeStr;
             }
@@ -278,7 +312,7 @@ namespace Smart.Parser.Lib
             person.RealEstateProperties.Add(stateProperty);
         }
 
-        static public void ParseOwnedPropertySingleRow(string estateTypeStr, string ownTypeStr, string areaStr, string countryStr, Person person, string ownTypeByColumn = null)
+        public static void ParseOwnedPropertySingleRow(string estateTypeStr, string ownTypeStr, string areaStr, string countryStr, Person person, string ownTypeByColumn = null)
         {
             SwapCountryAndSquare(ref areaStr, ref countryStr);
 
@@ -294,7 +328,7 @@ namespace Smart.Parser.Lib
                 square = DataHelper.ParseSquare(areaStr),
                 square_raw = NormalizeRawDecimalForTest(areaStr),
                 country_raw = DataHelper.ParseCountry(countryStr),
-                own_type_by_column = ownTypeByColumn
+                own_type_by_column = ownTypeByColumn,
             };
 
             // колонка с типом недвижимости отдельно
@@ -312,6 +346,7 @@ namespace Smart.Parser.Lib
             realEstateProperty.Text = estateTypeStr;
             person.RealEstateProperties.Add(realEstateProperty);
         }
+
         private static List<int> GetLinesStaringWithNumbers(string areaStr)
         {
             var linesWithNumbers = new List<int>();
@@ -323,6 +358,7 @@ namespace Smart.Parser.Lib
                     linesWithNumbers.Add(i);
                 }
             }
+
             return linesWithNumbers;
         }
 
@@ -337,6 +373,7 @@ namespace Smart.Parser.Lib
             {
                 return result;
             }
+
             var lines = SplitJoinedLinesByFuzzySeparator(value, linesWithNumbers);
             Debug.Assert(linesWithNumbers.Count > 1);
             var startLine = linesWithNumbers[0];
@@ -372,6 +409,7 @@ namespace Smart.Parser.Lib
                         notEmptyLines.Add(l);
                     }
                 }
+
                 if (notEmptyLines.Count == linesWithNumbers.Count)
                 {
                     return notEmptyLines;
@@ -425,6 +463,7 @@ namespace Smart.Parser.Lib
             public List<string> OwnTypes;
             public List<string> Squares;
             public List<string> Countries;
+
             public RealtyColumns(string estateTypeStr, string ownTypeStr, string areaStr, string countryStr)
             {
                 var linesWithNumbers = GetLinesStaringWithNumbers(areaStr);
@@ -454,26 +493,29 @@ namespace Smart.Parser.Lib
                             this.OwnTypes.Add(i.OwnType);
                         }
                     }
+
                     this.Countries = new AntlrCountryListParser().ParseToStringList(countryStr);
                 }
             }
         }
-        static public void ParseOwnedPropertyManyValuesInOneCell(string realtyTypeStr, string ownTypeStr, string squareStr, string countryStr, Person person, string ownTypeByColumn = null)
+
+        public static void ParseOwnedPropertyManyValuesInOneCell(string realtyTypeStr, string ownTypeStr, string squareStr, string countryStr, Person person, string ownTypeByColumn = null)
         {
             var cols = new RealtyColumns(realtyTypeStr, ownTypeStr, squareStr, countryStr);
             for (var i = 0; i < Math.Max(cols.Squares.Count, cols.RealtyTypes.Count); ++i)
             {
                 ParseOwnedPropertySingleRow(
-                    GetListValueOrDefault(cols.RealtyTypes, i, ""),
+                    GetListValueOrDefault(cols.RealtyTypes, i, string.Empty),
                     GetListValueOrDefault(cols.OwnTypes, i, null),
-                    GetListValueOrDefault(cols.Squares, i, ""),
-                    GetListValueOrDefault(cols.Countries, i, ""),
+                    GetListValueOrDefault(cols.Squares, i, string.Empty),
+                    GetListValueOrDefault(cols.Countries, i, string.Empty),
                     person,
-                    ownTypeByColumn
-                );
+                    ownTypeByColumn);
             }
         }
-        static public void ParseStatePropertyManyValuesInOneCell(string realtyTypeStr,
+
+        public static void ParseStatePropertyManyValuesInOneCell(
+            string realtyTypeStr,
             string ownTypeStr,
             string squareStr,
             string countryStr,
@@ -483,12 +525,11 @@ namespace Smart.Parser.Lib
             for (var i = 0; i < Math.Max(cols.Squares.Count, cols.RealtyTypes.Count); ++i)
             {
                 ParseStatePropertySingleRow(
-                    GetListValueOrDefault(cols.RealtyTypes, i, ""),
-                    GetListValueOrDefault(cols.OwnTypes, i, ""),
-                    GetListValueOrDefault(cols.Squares, i, ""),
-                    GetListValueOrDefault(cols.Countries, i, ""),
-                    person
-                );
+                    GetListValueOrDefault(cols.RealtyTypes, i, string.Empty),
+                    GetListValueOrDefault(cols.OwnTypes, i, string.Empty),
+                    GetListValueOrDefault(cols.Squares, i, string.Empty),
+                    GetListValueOrDefault(cols.Countries, i, string.Empty),
+                    person);
             }
         }
     }

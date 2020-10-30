@@ -21,8 +21,11 @@ namespace Smart.Parser.Adapters
         }
 
         public string PersonName { get; set; }
+
         public string Year { get; set; }
+
         public string Title { get; set; }
+
         public List<List<Cell>> Table { get; set; }
     }
 
@@ -94,7 +97,7 @@ namespace Smart.Parser.Adapters
             }
         }
 
-        protected  void MakeTable(IDocument document, WorksheetInfo worksheet, string year = null)
+        protected void MakeTable(IDocument document, WorksheetInfo worksheet, string year = null)
         {
             var table = this.GetTable(document, year, out var name, out var title);
             worksheet.PersonName = name;
@@ -103,15 +106,15 @@ namespace Smart.Parser.Adapters
             worksheet.Title = title;
         }
 
-        protected  List<List<Cell>> GetTable(IDocument document,  string year, out string name,  out string title)
+        protected List<List<Cell>> GetTable(IDocument document, string year, out string name, out string title)
         {
             name = this._scheme.GetPersonName();
-            title = this._scheme.GetTitle( year);
-            var members = this._scheme.GetMembers( name, year);
+            title = this._scheme.GetTitle(year);
+            var members = this._scheme.GetMembers(name, year);
 
             var table = new List<List<Cell>>
             {
-                this.MakeHeaders(members.First(), 1).ToList()
+                this.MakeHeaders(members.First(), 1).ToList(),
             };
             this.ProcessMainMember(table, members.Skip(0).First(), name);
             this.ProcessAdditionalMembers(table, members.Skip(1), name);
@@ -129,7 +132,7 @@ namespace Smart.Parser.Adapters
                 Row = 0,
                 Col = 0,
                 MergedColsCount = table[1].Count,
-                MergedRowsCount = 1
+                MergedRowsCount = 1,
             };
             titleRow.Add(titleCell);
             return titleRow;
@@ -137,7 +140,7 @@ namespace Smart.Parser.Adapters
 
         protected void ProcessAdditionalMembers(List<List<Cell>> table, IEnumerable<IElement> members, string declarantName)
         {
-            foreach(var memberElement in members)
+            foreach (var memberElement in members)
             {
                 var name = this._scheme.GetMemberName(memberElement);
                 var tableLines = ExtractLinesFromTable(this._scheme.GetTableFromMember(memberElement));
@@ -147,9 +150,9 @@ namespace Smart.Parser.Adapters
                 {
                     var line = new List<Cell>
                     {
-                        GetCell(name, table.Count, 0)
+                        GetCell(name, table.Count, 0),
                     };
-                    //ModifyLinesForRealEstate(tableLines);
+                    // ModifyLinesForRealEstate(tableLines);
                     line.AddRange(GetRow(tableLines[i], table.Count, 1));
                     table.Add(line);
                 }
@@ -166,7 +169,7 @@ namespace Smart.Parser.Adapters
                 table.Add(line);
                 if (table.Count > 2)
                 {
-                    name = "";
+                    name = string.Empty;
                 }
 
                 line.Add(GetCell(name, table.Count, 0));
@@ -174,7 +177,7 @@ namespace Smart.Parser.Adapters
             }
         }
 
-        protected IEnumerable<Cell> MakeHeaders( IElement memberElement, int rowNum)
+        protected IEnumerable<Cell> MakeHeaders(IElement memberElement, int rowNum)
         {
             var lines = ExtractLinesFromTable(this._scheme.GetTableFromMember(memberElement));
             var headerLine = lines[0];
@@ -187,25 +190,31 @@ namespace Smart.Parser.Adapters
         {
             var lines = new List<List<string>>();
             var linesSelection = tableElement.QuerySelectorAll("tr");
-            foreach(var lineElement in linesSelection)
+            foreach (var lineElement in linesSelection)
             {
                 var splitedCellsLine = new List<List<string>>();
-                foreach(var cell in lineElement.Children)
+                foreach (var cell in lineElement.Children)
                 {
                     var splitted = new List<string>();
-                    var current = "";
+                    var current = string.Empty;
 
                     foreach (var child in cell.ChildNodes)
                     {
-                        if (child.NodeName == "BR")  {
+                        if (child.NodeName == "BR")
+                        {
                             splitted.Add(current);
-                            current = "";
-                        } else if (child.NodeName == "P") {
-                            splitted.Add(child.TextContent.Replace("\n", " ").Replace("\t", "").Trim());
-                        } else  {
-                            current += child.TextContent.Replace("\n", " ").Replace("\t", "").Trim();
+                            current = string.Empty;
+                        }
+                        else if (child.NodeName == "P")
+                        {
+                            splitted.Add(child.TextContent.Replace("\n", " ").Replace("\t", string.Empty).Trim());
+                        }
+                        else
+                        {
+                            current += child.TextContent.Replace("\n", " ").Replace("\t", string.Empty).Trim();
                         }
                     }
+
                     splitted.Add(current);
                     splitedCellsLine.Add(splitted);
                 }
@@ -226,9 +235,10 @@ namespace Smart.Parser.Adapters
                         }
                         else
                         {
-                            line.Add("");
+                            line.Add(string.Empty);
                         }
                     }
+
                     if (finish)
                     {
                         break;
@@ -237,13 +247,14 @@ namespace Smart.Parser.Adapters
                     lines.Add(line);
                 }
             }
+
             return lines;
         }
 
         public static bool CanProcess(string filename)
         {
             var document = AngleHtmlAdapter.GetAngleDocument(filename);
-            return _allSchemes.Any(x=>x.CanProcess(document));
+            return _allSchemes.Any(x => x.CanProcess(document));
         }
 
         protected static Cell GetCell(string text, int row, int column)
@@ -254,7 +265,7 @@ namespace Smart.Parser.Adapters
                 Row = row,
                 Col = column,
                 IsMerged = false,
-                CellWidth = 1
+                CellWidth = 1,
             };
             return cell;
         }

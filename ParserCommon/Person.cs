@@ -14,14 +14,16 @@ namespace TI.Declarator.ParserCommon
         public List<RealEstateProperty> RealEstateProperties = new List<RealEstateProperty>();
         public List<Vehicle> Vehicles = new List<Vehicle>();
         public decimal? DeclaredYearlyIncome;
-        public string DeclaredYearlyIncomeRaw = "";
+        public string DeclaredYearlyIncomeRaw = string.Empty;
 
-        public string DataSources = "";
+        public string DataSources = string.Empty;
 
         public List<DataRowInterface> DateRows = new List<DataRowInterface>();
 
-        public string document_position { set; get; }
-        virtual public int? PersonIndex { set; get; } = null;
-        public int? sheet_index { set; get; }
+        public string document_position { get; set; }
+
+        public virtual int? PersonIndex { get; set; } = null;
+
+        public int? sheet_index { get; set; }
     }
 }

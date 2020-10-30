@@ -14,6 +14,7 @@
         public string Model;
 
         public static implicit operator Vehicle(string v) => new Vehicle(v);
+
         public static implicit operator string(Vehicle v) => v.Text;
     }
 }

@@ -29,6 +29,7 @@ namespace Smart.Parser.Adapters
                     }
                 }
             }
+
             return result;
         }
 
@@ -48,6 +49,7 @@ namespace Smart.Parser.Adapters
                     result.Add(token);
                 }
             }
+
             return result;
         }
 
@@ -57,6 +59,7 @@ namespace Smart.Parser.Adapters
             {
                 return false;
             }
+
             for (var i = 0; i < row1.Count; ++i)
             {
                 var tokens1 = TokenizeCellText(row1[i]);
@@ -67,15 +70,14 @@ namespace Smart.Parser.Adapters
                     var firstWord = tokens2.First();
                     if (lastWord.Length > 0 && firstWord.Length > 0)
                     {
-                        var joinExplanation = "";
+                        var joinExplanation = string.Empty;
                         if (Bigrams.ContainsKey(lastWord + " " + firstWord))
                         {
                             joinExplanation = "frequent bigram";
                         }
 
                         if (Regex.Matches(lastWord, @".+\p{Pd}$").Count > 0
-                              && char.IsLower(firstWord[0])
-                           )
+                              && char.IsLower(firstWord[0]))
                         {
                             joinExplanation = "word break regexp";
                         }
@@ -83,8 +85,7 @@ namespace Smart.Parser.Adapters
                         if (tokens1.Count + tokens2.Count == 3
                             && TextHelpers.CanBePatronymic(tokens2[tokens2.Count - 1])
                             && !tokens2[tokens2.Count - 1].Contains('.')
-                            && char.IsUpper(tokens1[0][0])
-                            )
+                            && char.IsUpper(tokens1[0][0]))
                         {
                             joinExplanation = "person regexp";
                         }
@@ -92,8 +93,7 @@ namespace Smart.Parser.Adapters
                         if (TextHelpers.MayContainsRole(string.Join(" ", tokens1))
                             && TextHelpers.CanBePatronymic(tokens2.Last())
                             && char.IsUpper(tokens2[0][0])
-                            && tokens1.All(x => !TextHelpers.CanBePatronymic(x))
-                        )
+                            && tokens1.All(x => !TextHelpers.CanBePatronymic(x)))
                         {
                             joinExplanation = "role and person regexp";
                         }
@@ -109,18 +109,15 @@ namespace Smart.Parser.Adapters
                             joinExplanation = "open ( regexp";
                         }
 
-                        if (joinExplanation != "")
+                        if (joinExplanation != string.Empty)
                         {
-                            Logger.Debug(string.Format(
-                                "Join rows using {0} on cells \"{1}\" and \"{2}\"",
-                                joinExplanation,
-                                row1[i].ReplaceEolnWithSpace(),
-                                row2[i].ReplaceEolnWithSpace()));
+                            Logger.Debug($"Join rows using {joinExplanation} on cells \"{row1[i].ReplaceEolnWithSpace()}\" and \"{row2[i].ReplaceEolnWithSpace()}\"");
                             return true;
                         }
                     }
                 }
             }
+
             return false;
         }
     }

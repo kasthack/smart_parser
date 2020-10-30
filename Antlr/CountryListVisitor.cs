@@ -8,6 +8,7 @@ namespace SmartAntlr
         public GeneralAntlrParserWrapper Parser;
 
         public CountryListVisitor(GeneralAntlrParserWrapper parser) => this.Parser = parser;
+
         public override object VisitCountry(CountryList.CountryContext context)
         {
             var line = new GeneralParserPhrase(this.Parser, context);

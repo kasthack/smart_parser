@@ -25,6 +25,7 @@ namespace Smart.Parser.Lib.Adapters.DocxSchemes
         #endregion
 
         public Document Document { get; set; }
+
         public abstract bool CanProcess(WordprocessingDocument document);
 
         public abstract Declaration Parse(Parser parser, int? userDocumentFileId);

@@ -13,7 +13,8 @@ namespace Smart.Parser.Lib
         private DateTime FirstPassStartTime;
         private DateTime SecondPassStartTime;
         private readonly bool FailOnRelativeOrphan;
-        public int NameOrRelativeTypeColumn { set; get; } = 1;
+
+        public int NameOrRelativeTypeColumn { get; set; } = 1;
 
         public Parser(IAdapter adapter, bool failOnRelativeOrphan = true)
         {
@@ -21,6 +22,7 @@ namespace Smart.Parser.Lib
             this.FailOnRelativeOrphan = failOnRelativeOrphan;
             ParserNumberFormatInfo.NumberDecimalSeparator = ",";
         }
+
         public static void InitializeSmartParser()
         {
             Smart.Parser.Adapters.AsposeLicense.SetAsposeLicenseFromEnvironment();
@@ -49,15 +51,16 @@ namespace Smart.Parser.Lib
                 Year = columnOrdering.Year,
                 DocumentFileId = documentfile_id,
                 ArchiveFileName = archive,
-                SheetNumber = this.Adapter.GetWorksheetIndex()
+                SheetNumber = this.Adapter.GetWorksheetIndex(),
             };
             if (properties.Year == null)
             {
                 properties.Year = columnOrdering.YearFromIncome;
             }
+
             var declaration = new Declaration()
             {
-                Properties = properties
+                Properties = properties,
             };
             return declaration;
         }
@@ -66,7 +69,7 @@ namespace Smart.Parser.Lib
         {
             private DeclarationSection CurrentSection = null;
             private PublicServant CurrentDeclarant = null;
-            public TI.Declarator.ParserCommon.Person CurrentPerson = null;
+            public Person CurrentPerson = null;
             private readonly Declaration _Declaration;
             private readonly bool FailOnRelativeOrphan;
 
@@ -75,19 +78,21 @@ namespace Smart.Parser.Lib
                 this._Declaration = declaration;
                 this.FailOnRelativeOrphan = failOnRelativeOrphan;
             }
+
             public void FinishDeclarant()
             {
                 this.CurrentDeclarant = null;
                 this.CurrentPerson = null;
             }
+
             public void CreateNewSection(int row, string sectionTitle)
             {
                 this.CurrentSection = new DeclarationSection() { Row = row, Name = sectionTitle };
-                Logger.Debug(string.Format("find section at line {0}:'{1}'", row, sectionTitle));
+                Logger.Debug($"find section at line {row}:'{sectionTitle}'");
                 this.FinishDeclarant();
             }
 
-            //  see 8562.pdf.docx  in tests
+            // see 8562.pdf.docx  in tests
             //  calc string width using graphics.MeasureString methods
             private bool DivideDeclarantAndRelativesBySoftEolns(ColumnOrdering columnOrdering, DataRow row)
             {
@@ -95,6 +100,7 @@ namespace Smart.Parser.Lib
                 {
                     return false;
                 }
+
                 if (!columnOrdering.ContainsField(DeclarationField.NameOrRelativeType))
                 {
                     return false;
@@ -136,6 +142,7 @@ namespace Smart.Parser.Lib
                         borders.Add(i);
                     }
                 }
+
                 if (borders.Count == 1)
                 {
                     return false;
@@ -146,6 +153,7 @@ namespace Smart.Parser.Lib
                 {
                     dividedLines.Add(row.DeepClone());
                 }
+
                 for (var i = 0; i < row.Cells.Count; ++i)
                 {
                     var divided = row.Cells[i].GetLinesWithSoftBreaks();
@@ -162,21 +170,23 @@ namespace Smart.Parser.Lib
                                 dividedLines[k].Cells[i].IsEmpty = false;
                             }
                         }
+
                         start = end;
                     }
                 }
+
                 for (var k = 0; k < borders.Count; ++k)
                 {
                     var currRow = dividedLines[k];
-                    var nameOrRelativeType = currRow.GetDeclarationField(DeclarationField.NameOrRelativeType).Text.Replace("не имеет", "");
+                    var nameOrRelativeType = currRow.GetDeclarationField(DeclarationField.NameOrRelativeType).Text.Replace("не имеет", string.Empty);
                     if (k == 0)
                     {
                         currRow.PersonName = nameOrRelativeType;
-                        currRow.Occupation = row.Occupation.Replace("не имеет", "");
+                        currRow.Occupation = row.Occupation.Replace("не имеет", string.Empty);
                         currRow.Department = row.Department;
                         if (currRow.Department != null)
                         {
-                            currRow.Department = currRow.Department.Replace("не имеет", "");
+                            currRow.Department = currRow.Department.Replace("не имеет", string.Empty);
                         }
 
                         this.InitDeclarantProperties(currRow);
@@ -185,7 +195,7 @@ namespace Smart.Parser.Lib
                     {
                         if (!DataHelper.IsRelativeInfo(nameOrRelativeType))
                         {
-                            Logger.Error(string.Format("cannot parse relative {0}", nameOrRelativeType.ReplaceEolnWithSpace()));
+                            Logger.Error($"cannot parse relative {nameOrRelativeType.ReplaceEolnWithSpace()}");
                             return false;
                         }
                         else
@@ -195,10 +205,13 @@ namespace Smart.Parser.Lib
 
                         this.CreateNewRelative(currRow);
                     }
+
                     this.CurrentPerson.DateRows.Add(dividedLines[k]);
                 }
+
                 return true;
             }
+
             public void AddInputRowToCurrentPerson(ColumnOrdering columnOrdering, DataRow row)
             {
                 if (this.CurrentPerson != null && !this.DivideDeclarantAndRelativesBySoftEolns(columnOrdering, row))
@@ -219,6 +232,7 @@ namespace Smart.Parser.Lib
                         {
                             childRow = row.DeepClone();
                         }
+
                         f = (f & ~relativeMask) | DeclarationField.MainDeclarant;
                         var declarantCell = childRow.GetDeclarationField(f);
                         declarantCell.Text = value;
@@ -226,6 +240,7 @@ namespace Smart.Parser.Lib
                     }
                 }
             }
+
             public void TransposeTableByRelatives(ColumnOrdering columnOrdering, DataRow row)
             {
                 DataRow childRow = null;
@@ -235,6 +250,7 @@ namespace Smart.Parser.Lib
                     this.CopyRelativeFieldToMainCell(row, DeclarationField.DeclarantChild, f, ref childRow);
                     this.CopyRelativeFieldToMainCell(row, DeclarationField.DeclarantSpouse, f, ref spouseRow);
                 }
+
                 if (childRow != null)
                 {
                     childRow.RelativeType = "несовершеннолетний ребенок";
@@ -242,6 +258,7 @@ namespace Smart.Parser.Lib
                     this.CurrentPerson.DateRows.Add(childRow);
                     Logger.Debug("Create artificial line for a child");
                 }
+
                 if (spouseRow != null)
                 {
                     spouseRow.RelativeType = "супруга";
@@ -253,8 +270,8 @@ namespace Smart.Parser.Lib
 
             public void InitDeclarantProperties(DataRow row)
             {
-                this.CurrentDeclarant.NameRaw = row.PersonName.RemoveStupidTranslit().Replace("не имеет", "");
-                this.CurrentDeclarant.Occupation = row.Occupation.Replace("не имеет", "");
+                this.CurrentDeclarant.NameRaw = row.PersonName.RemoveStupidTranslit().Replace("не имеет", string.Empty);
+                this.CurrentDeclarant.Occupation = row.Occupation.Replace("не имеет", string.Empty);
                 this.CurrentDeclarant.Department = row.Department;
                 this.CurrentDeclarant.Ordering = row.ColumnOrdering;
             }
@@ -285,13 +302,14 @@ namespace Smart.Parser.Lib
                     if (this.FailOnRelativeOrphan)
                     {
                         throw new SmartParserRelativeWithoutPersonException(
-                            string.Format("Relative {0} at row {1} without main Person", row.RelativeType, row.GetRowIndex()));
+                            $"Relative {row.RelativeType} at row {row.GetRowIndex()} without main Person");
                     }
                     else
                     {
                         return;
                     }
                 }
+
                 var relative = new Relative();
                 this.CurrentDeclarant.AddRelative(relative);
                 this.CurrentPerson = relative;
@@ -300,8 +318,9 @@ namespace Smart.Parser.Lib
                 if (relationType == RelationType.Error)
                 {
                     throw new SmartParserException(
-                        string.Format("Wrong relative name '{0}' at row {1} ", row.RelativeType, row));
+                        $"Wrong relative name '{row.RelativeType}' at row {row} ");
                 }
+
                 relative.RelationType = relationType;
                 relative.document_position = row.NameDocPosition;
                 relative.sheet_index = this._Declaration.Properties.SheetNumber;
@@ -310,10 +329,10 @@ namespace Smart.Parser.Lib
 
         private bool IsNumbersRow(DataRow row)
         {
-            var s = "";
+            var s = string.Empty;
             foreach (var c in row.Cells)
             {
-                s += c.Text.Replace("\n", "").Replace(" ", "") + " ";
+                s += c.Text.Replace("\n", string.Empty).Replace(" ", string.Empty) + " ";
             }
 
             return s.StartsWith("1 2 3 4");
@@ -335,8 +354,9 @@ namespace Smart.Parser.Lib
             }
             catch (Exception e)
             {
-                Logger.Debug(string.Format("Cannot parse possible header, row={0}, error={1}, so skip it may be it is a data row ", e.ToString(), row.GetRowIndex()));
+                Logger.Debug($"Cannot parse possible header, row={e}, error={row.GetRowIndex()}, so skip it may be it is a data row ");
             }
+
             return false;
         }
 
@@ -356,7 +376,7 @@ namespace Smart.Parser.Lib
             }
 
             var skipEmptyPerson = false;
-            var prevPersonName = "";
+            var prevPersonName = string.Empty;
 
             for (var row = rowOffset; row < this.Adapter.GetRowsCount(); row++)
             {
@@ -365,17 +385,20 @@ namespace Smart.Parser.Lib
                 {
                     continue;
                 }
+
                 if (this.IsNumbersRow(currRow))
                 {
                     continue;
                 }
-                Logger.Debug(string.Format("currRow {1}: {0}", currRow.DebugString(), row));
+
+                Logger.Debug($"currRow {row}: {currRow.DebugString()}");
 
                 if (IAdapter.IsSectionRow(currRow.Cells, columnOrdering.GetMaxColumnEndIndex(), false, out var sectionName))
                 {
                     borderFinder.CreateNewSection(row, sectionName);
                     continue;
                 }
+
                 {
                     if (this.IsHeaderRow(currRow, out var newColumnOrdering))
                     {
@@ -426,15 +449,17 @@ namespace Smart.Parser.Lib
                     if (borderFinder.CurrentPerson == null && this.FailOnRelativeOrphan)
                     {
                         skipEmptyPerson = true;
-                        Logger.Error(string.Format("No person to attach info on row={0}", row));
+                        Logger.Error($"No person to attach info on row={row}");
                         continue;
                     }
                 }
+
                 if (!skipEmptyPerson)
                 {
                     borderFinder.AddInputRowToCurrentPerson(columnOrdering, currRow);
                 }
             }
+
             if (updateTrigrams)
             {
                 ColumnPredictor.WriteData();
@@ -451,7 +476,7 @@ namespace Smart.Parser.Lib
 
         public void ForgetThousandMultiplier(Declaration declaration)
         {
-            // the incomes are so high, that we should not multiply incomes by 1000 although the 
+            // the incomes are so high, that we should not multiply incomes by 1000 although the
             // column title specify this multiplier
             var incomes = new List<decimal>();
             foreach (var servant in declaration.PublicServants)
@@ -469,6 +494,7 @@ namespace Smart.Parser.Lib
                     }
                 }
             }
+
             if (incomes.Count > 3)
             {
                 incomes.Sort();
@@ -507,6 +533,7 @@ namespace Smart.Parser.Lib
 
             return true;
         }
+
         private bool ParseIncome(DataRow currRow, Person person, bool ignoreThousandMultiplier)
         {
             try
@@ -542,6 +569,7 @@ namespace Smart.Parser.Lib
 
                     Logger.Info("Rate: {0:0.00} declarant in second", count / time_sec);
                 }
+
                 var servantAndRel = new List<Person>() { servant };
                 servantAndRel.AddRange(servant.Relatives);
 
@@ -551,6 +579,7 @@ namespace Smart.Parser.Lib
                     {
                         Logger.Debug("PublicServant: " + publicServant.NameRaw.ReplaceEolnWithSpace());
                     }
+
                     var foundIncomeInfo = false;
 
                     var rows = new List<DataRow>();
@@ -599,6 +628,7 @@ namespace Smart.Parser.Lib
                     }
                 }
             }
+
             Logger.Info("Total income: {0}", totalIncome);
             var seconds = DateTime.Now.Subtract(this.FirstPassStartTime).TotalSeconds;
             Logger.Info("Final Rate: {0:0.00} declarant in second", count / seconds);
@@ -611,7 +641,7 @@ namespace Smart.Parser.Lib
         {
             if (r.ColumnOrdering.ColumnOrder.ContainsKey(DeclarationField.Vehicle))
             {
-                var s = r.GetContents(DeclarationField.Vehicle).Replace("не имеет", "");
+                var s = r.GetContents(DeclarationField.Vehicle).Replace("не имеет", string.Empty);
                 if (!DataHelper.IsEmptyValue(s))
                 {
                     person.Vehicles.Add(new Vehicle(s));
@@ -619,7 +649,7 @@ namespace Smart.Parser.Lib
             }
             else if (r.ColumnOrdering.ColumnOrder.ContainsKey(DeclarationField.DeclarantVehicle))
             {
-                var s = r.GetContents(DeclarationField.DeclarantVehicle).Replace("не имеет", "");
+                var s = r.GetContents(DeclarationField.DeclarantVehicle).Replace("не имеет", string.Empty);
                 if (!DataHelper.IsEmptyValue(s))
                 {
                     person.Vehicles.Add(new Vehicle(s));
@@ -627,14 +657,15 @@ namespace Smart.Parser.Lib
             }
             else
             {
-                var t = r.GetContents(DeclarationField.VehicleType).Replace("не имеет", "");
-                var m = r.GetContents(DeclarationField.VehicleModel, false).Replace("не имеет", "");
+                var t = r.GetContents(DeclarationField.VehicleType).Replace("не имеет", string.Empty);
+                var m = r.GetContents(DeclarationField.VehicleModel, false).Replace("не имеет", string.Empty);
                 var text = t + " " + m;
                 if (t == m)
                 {
                     text = t;
-                    m = "";
+                    m = string.Empty;
                 }
+
                 if (!DataHelper.IsEmptyValue(m) || !DataHelper.IsEmptyValue(t))
                 {
                     person.Vehicles.Add(new Vehicle(text.Trim(), t, m));

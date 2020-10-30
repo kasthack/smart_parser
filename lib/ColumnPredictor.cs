@@ -11,16 +11,17 @@ using Smart.Parser.Lib;
 namespace Parser.Lib
 {
     using TrigramsDict = Dictionary<DeclarationField, Dictionary<string, int>>;
+
     public class ColumnPredictor
     {
-        private static  TrigramsDict Trigrams = new TrigramsDict();
+        private static TrigramsDict Trigrams = new TrigramsDict();
         private static Dictionary<DeclarationField, double> ClassFreq;
         private static double SampleLen;
-        static public bool CalcPrecision =  false;
-        static public int CorrectCount = 0;
-        static public int AllCount = 0;
+        public static bool CalcPrecision = false;
+        public static int CorrectCount = 0;
+        public static int AllCount = 0;
 
-        //static ColumnPredictor() //do not know why static constructor is not called,use Initialize
+        // static ColumnPredictor() //do not know why static constructor is not called,use Initialize
         public static void InitializeIfNotAlready()
         {
             if (SampleLen == 0)
@@ -35,15 +36,17 @@ namespace Parser.Lib
             var executableLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             return Path.Combine(executableLocation, "column_trigrams.txt");
         }
+
         public static void ReadData()
         {
             var currentAssembly = Assembly.GetExecutingAssembly();
             using var stream = currentAssembly.GetManifestResourceStream("Smart.Parser.Lib.Resources.column_trigrams.txt");
-            using var file = new System.IO.StreamReader(stream);
+            using var file = new StreamReader(stream);
             var jsonStr = file.ReadToEnd();
             Trigrams = JsonConvert.DeserializeObject<TrigramsDict>(jsonStr);
         }
-        public static System.Collections.Generic.IEnumerable<string> String2Trigrams(string words)
+
+        public static IEnumerable<string> String2Trigrams(string words)
         {
             words = "^" + words.ReplaceEolnWithSpace().CoalesceWhitespace() + "$";
             for (var i = 0; i < words.Length - 2; i++)
@@ -80,6 +83,7 @@ namespace Parser.Lib
                     resultField = i.Key;
                 }
             }
+
             return resultField;
         }
 
@@ -95,13 +99,14 @@ namespace Parser.Lib
                 return true;
             }
 
-            if (    ((field & DeclarationField.StartsWithDigitMask) > 0)
+            if (((field & DeclarationField.StartsWithDigitMask) > 0)
                  && !char.IsNumber(text[0]))
             {
-                    return false;
+                return false;
             }
+
             return !DataHelper.IsCountryStrict(text)
-                ||  (field & DeclarationField.CountryMask) != 0;
+                || (field & DeclarationField.CountryMask) != 0;
         }
 
         // follow https://habr.com/ru/post/120194/
@@ -116,24 +121,27 @@ namespace Parser.Lib
                     freqs[i.Key] = -Math.Log(ClassFreq[i.Key] / SampleLen);
                 }
             }
-            var fields = new List <DeclarationField > (freqs.Keys);
+
+            var fields = new List<DeclarationField>(freqs.Keys);
             foreach (var trigram in String2Trigrams(words))
             {
-                foreach  (var field in fields)
+                foreach (var field in fields)
                 {
-                    //DeclarationField field = i.Key;
+                    // DeclarationField field = i.Key;
                     Trigrams[field].TryGetValue(trigram, out var freq);
                     var trigramProb = (freq + 10E-10) / ClassFreq[field];
                     freqs[field] += -Math.Log(trigramProb);
                 }
             }
+
             return FindMin(freqs);
         }
 
         public static DeclarationField PredictByStrings(List<string> words)
         {
             var negativeFreqs = new Dictionary<DeclarationField, double>();
-            foreach (var w in words) {
+            foreach (var w in words)
+            {
                 if (DataHelper.IsEmptyValue(w))
                 {
                     continue;
@@ -149,6 +157,7 @@ namespace Parser.Lib
                     negativeFreqs[f] = -1;
                 }
             }
+
             return FindMin(negativeFreqs);
         }
 
@@ -160,7 +169,7 @@ namespace Parser.Lib
             }
 
             var text = cell.GetText(true);
-            if ((field & DeclarationField.SquareMask)>0 && DataHelper.ParseSquare(text).HasValue)
+            if ((field & DeclarationField.SquareMask) > 0 && DataHelper.ParseSquare(text).HasValue)
             {
                 return true;
             }
@@ -171,16 +180,17 @@ namespace Parser.Lib
 
         public static void WriteData()
         {
-            using var file = new System.IO.StreamWriter(GetDataPath());
+            using var file = new StreamWriter(GetDataPath());
             file.WriteLine(JsonConvert.SerializeObject(Trigrams));
         }
 
-        public static void IncrementTrigrams(DeclarationField field,  string words)
+        public static void IncrementTrigrams(DeclarationField field, string words)
         {
-            if (!Trigrams.ContainsKey(field) )
+            if (!Trigrams.ContainsKey(field))
             {
                 Trigrams[field] = new Dictionary<string, int>();
             }
+
             var FieldTrigrams = Trigrams[field];
             foreach (var trigram in String2Trigrams(words))
             {
@@ -194,6 +204,7 @@ namespace Parser.Lib
                 }
             }
         }
+
         public static void UpdateByRow(ColumnOrdering columnOrdering, DataRow row)
         {
             foreach (var i in columnOrdering.MergedColumnOrder)
@@ -201,7 +212,7 @@ namespace Parser.Lib
                 try
                 {
                     var cell = row.GetDeclarationField(i.Field);
-                    var s = (cell == null) ? "" : cell.GetText();
+                    var s = (cell == null) ? string.Empty : cell.GetText();
                     IncrementTrigrams(i.Field, s);
                 }
                 catch (Exception)
@@ -209,10 +220,9 @@ namespace Parser.Lib
                 }
             }
         }
-        public static string GetPrecisionStr() => string.Format(
-                    "Predictor precision all={0} correct={1}, precision={2}",
-                    AllCount, CorrectCount,
-                    CorrectCount / (AllCount + 10E-10));
+
+        public static string GetPrecisionStr() => $"Predictor precision all={AllCount} correct={CorrectCount}, precision={CorrectCount / (AllCount + 10E-10)}";
+
         public static DeclarationField PredictEmptyColumnTitle(IAdapter adapter, Cell headerCell)
         {
             var texts = new List<string>();
@@ -238,16 +248,18 @@ namespace Parser.Lib
                         rowIndex++;
                     }
                 }
+
                 if (rowIndex >= adapter.GetRowsCount())
                 {
                     break;
                 }
             }
+
             var field = PredictByStrings(texts);
             if (headerCell.TextAbove != null && ((field & DeclarationField.AllOwnTypes) > 0))
             {
                 var h = headerCell.TextAbove;
-                // AllOwnTypes defined from 
+                // AllOwnTypes defined from
                 field &= ~DeclarationField.AllOwnTypes;
                 if (h.IsMixedColumn())
                 {
@@ -262,10 +274,11 @@ namespace Parser.Lib
                     field |= DeclarationField.Owned;
                 }
             }
-            Logger.Debug(string.Format("predict by {0}  -> {1}",
-                string.Join("\\n", texts), field));
+
+            Logger.Debug($"predict by {string.Join("\\n", texts)}  -> {field}");
             return field;
         }
+
         public static void PredictForPrecisionCheck(IAdapter adapter, Cell headerCell, DeclarationField field)
         {
             var predicted_field = PredictEmptyColumnTitle(adapter, headerCell);
@@ -275,10 +288,9 @@ namespace Parser.Lib
             }
             else
             {
-                Logger.Debug(
-                    string.Format("wrong predicted as {0} must be {1} ",
-                    predicted_field, field));
+                Logger.Debug($"wrong predicted as {predicted_field} must be {field} ");
             }
+
             AllCount++;
         }
     }

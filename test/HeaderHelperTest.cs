@@ -14,9 +14,10 @@ namespace test
         public void HeaderHelperTest1()
         {
             var docFile = Path.Combine(TestUtil.GetTestDataPath(), "E - min_sport_2012_Rukovoditeli_gospredpriyatij,_podvedomstvennyih_ministerstvu.doc");
-            //IAdapter adapter = AsposeExcelAdapter.CreateAsposeExcelAdapter(xlsxFile);
+            // IAdapter adapter = AsposeExcelAdapter.CreateAsposeExcelAdapter(xlsxFile);
             var adapter = AsposeDocAdapter.CreateAdapter(docFile);
         }
+
         [TestMethod]
         public void StringComparisonTest()
         {

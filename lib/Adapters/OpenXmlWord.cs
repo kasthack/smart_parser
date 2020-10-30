@@ -20,11 +20,13 @@ namespace Smart.Parser.Adapters
         public int TableWidthInPixels;
         public int TableIndentionInPixels = 0;
         public List<int> ColumnWidths;
+
         public static int DxaToPixels(int dxa)
         {
             var points = dxa / 20.0;
             return (int)(((double)points) * 96.0 / 72.0);
         }
+
         public static int TryReadWidth(string val, TableWidthUnitValues widthType, int parentWidthInPixels)
         {
             try
@@ -36,11 +38,13 @@ namespace Smart.Parser.Adapters
                     var pxels = parentWidthInPixels * ratio;
                     return (int)pxels;
                 }
+
                 if (widthType != TableWidthUnitValues.Dxa && widthType != TableWidthUnitValues.Auto)
                 {
                     Console.WriteLine("unknown TableWidthUnitValues");
                     return 0;
                 }
+
                 return DxaToPixels(int.Parse(val));
             }
             catch (Exception)
@@ -58,12 +62,14 @@ namespace Smart.Parser.Adapters
         public int DefaultFontSize = 10;
         public string DefaultFontName = "Times New Roman";
         private bool disposed = false;
+
         public WordDocHolder(WordprocessingDocument wordDocument)
         {
             this.WordDocument = wordDocument;
             this.InitPageSize();
             this.InitDefaultFontInfo();
         }
+
         public void Dispose()
         {
             this.Dispose(true);
@@ -87,6 +93,7 @@ namespace Smart.Parser.Adapters
 
             this.disposed = true;
         }
+
         private void InitPageSize()
         {
             var docPart = this.WordDocument.MainDocumentPart;
@@ -96,6 +103,7 @@ namespace Smart.Parser.Adapters
             {
                 pageDxa = (int)(uint)pageSize.Width;
             }
+
             this.DocumentPageSizeInPixels = TableWidthInfo.DxaToPixels(pageDxa);
 
             var pageMargin = docPart.Document.Descendants<PageMargin>().FirstOrDefault();
@@ -104,8 +112,10 @@ namespace Smart.Parser.Adapters
             {
                 pageMarginDxa = (int)(uint)pageMargin.Left;
             }
+
             this.DocumentPageLeftMaginInPixels = TableWidthInfo.DxaToPixels(pageMarginDxa);
         }
+
         private void InitDefaultFontInfo()
         {
             if (this.WordDocument.MainDocumentPart.StyleDefinitionsPart != null)
@@ -121,7 +131,7 @@ namespace Smart.Parser.Adapters
                 }
             }
 
-            const string wordmlNamespace =  "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+            const string wordmlNamespace = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
             XNamespace w = wordmlNamespace;
             StylesPart stylesPart = this.WordDocument.MainDocumentPart.StyleDefinitionsPart;
             if (stylesPart != null)
@@ -151,9 +161,10 @@ namespace Smart.Parser.Adapters
                 }
             }
         }
+
         public string FindTitleAboveTheTable()
         {
-            var title = "";
+            var title = string.Empty;
             var body = this.WordDocument.MainDocumentPart.Document.Body;
             foreach (var p in this.WordDocument.MainDocumentPart.Document.Descendants<Paragraph>())
             {
@@ -161,8 +172,10 @@ namespace Smart.Parser.Adapters
                 {
                     break;
                 }
+
                 title += p.InnerText + "\n";
             }
+
             return title;
         }
     }
@@ -170,6 +183,7 @@ namespace Smart.Parser.Adapters
     public class OpenXmlWordCell : Cell
     {
         public bool IsVerticallyMerged;
+
         public OpenXmlWordCell(WordDocHolder docHolder, TableWidthInfo tableWidth, TableCell inputCell, int row, int column)
         {
             this.InitTextProperties(docHolder, inputCell);
@@ -186,10 +200,11 @@ namespace Smart.Parser.Adapters
                 }
                 else
                 {
-                    //vmerge.Val == MergedCellValues.Restart
+                    // vmerge.Val == MergedCellValues.Restart
                     this.IsVerticallyMerged = false;
                 }
             }
+
             var gridSpan = inputCell.TableCellProperties.GetFirstChild<GridSpan>();
             this.IsMerged = gridSpan?.Val > 1;
             this.FirstMergedRow = -1; // init afterwards
@@ -202,8 +217,7 @@ namespace Smart.Parser.Adapters
                 .TableCellProperties?
                 .TableCellWidth?
                 .Type != null
-                && inputCell.TableCellProperties.TableCellWidth.Type != TableWidthUnitValues.Auto
-                )
+                && inputCell.TableCellProperties.TableCellWidth.Type != TableWidthUnitValues.Auto)
             {
                 this.CellWidth = TableWidthInfo.TryReadWidth(
                     inputCell.TableCellProperties.TableCellWidth.Width,
@@ -217,8 +231,10 @@ namespace Smart.Parser.Adapters
                     this.CellWidth = tableWidth.ColumnWidths[this.Col];
                 }
             }
+
             this.AdditTableIndention = tableWidth.TableIndentionInPixels;
         }
+
         public OpenXmlWordCell(IAdapter.TJsonCell cell)
         {
             this.Text = cell.t;
@@ -236,6 +252,7 @@ namespace Smart.Parser.Adapters
             {
                 return 0;
             }
+
             if (pSpc.AfterLines?.HasValue == true)
             {
                 return pSpc.AfterLines;
@@ -253,8 +270,8 @@ namespace Smart.Parser.Adapters
 
         private void InitTextProperties(WordDocHolder docHolder, OpenXmlElement inputCell)
         {
-            var s = "";
-            this.FontName = "";
+            var s = string.Empty;
+            this.FontName = string.Empty;
             this.FontSize = 0;
             foreach (var p in inputCell.Elements<Paragraph>())
             {
@@ -271,9 +288,10 @@ namespace Smart.Parser.Adapters
                                 var runFontSize = int.Parse(rProps.FontSize.Val);
                                 if (runFontSize <= 28)
                                 {
-                                    this.FontSize = runFontSize; //  if font is too large, it is is an ocr error, ignore it
+                                    this.FontSize = runFontSize; // if font is too large, it is is an ocr error, ignore it
                                 }
                             }
+
                             if (rProps.RunFonts != null)
                             {
                                 this.FontName = rProps.RunFonts.ComplexScript;
@@ -289,16 +307,18 @@ namespace Smart.Parser.Adapters
                         s += "\n";
                     }
                     else if (textOrBreak.LocalName == "br")
-                    /* do  not use lastRenderedPageBreak, see MinRes2011 for wrong lastRenderedPageBreak in Семенов 
+                    /* do  not use lastRenderedPageBreak, see MinRes2011 for wrong lastRenderedPageBreak in Семенов
                     ||
                           (textOrBreak.Name == w + "lastRenderedPageBreak") */
                     {
                         s += "\n";
-                    } else if (textOrBreak.LocalName == "numPr")
+                    }
+                    else if (textOrBreak.LocalName == "numPr")
                     {
                         s += "- ";
                     }
                 }
+
                 s += "\n";
                 var pPr = p.ParagraphProperties;
                 if (pPr != null)
@@ -309,12 +329,14 @@ namespace Smart.Parser.Adapters
                     }
                 }
             }
+
             this.Text = s;
             this.IsEmpty = s.IsNullOrWhiteSpace();
             if (string.IsNullOrEmpty(this.FontName))
             {
                 this.FontName = docHolder.DefaultFontName;
             }
+
             if (this.FontSize == 0)
             {
                 this.FontSize = docHolder.DefaultFontSize;
@@ -340,7 +362,7 @@ namespace Smart.Parser.Adapters
 
         private static Uri FixUri(string brokenUri) => new Uri("http://broken-link/");
 
-        private void ProcessDoc (string fileName, string extension, int maxRowsToProcess)
+        private void ProcessDoc(string fileName, string extension, int maxRowsToProcess)
         {
             using var doc = new WordDocHolder(WordprocessingDocument.Open(fileName, false));
             this.CurrentScheme = _allSchemes.Find(x => x.CanProcess(doc.WordDocument));
@@ -359,6 +381,7 @@ namespace Smart.Parser.Adapters
                 this.InitializeVerticallyMerge();
             }
         }
+
         public OpenXmlWordAdapter(string fileName, int maxRowsToProcess)
         {
             this._DocxConverter = new DocxConverter(ConvertedFileStorageUrl);
@@ -373,6 +396,7 @@ namespace Smart.Parser.Adapters
                 this.UnmergedColumnsCount = this.GetUnmergedColumnsCountByFirstRow();
                 return;
             }
+
             this.DocumentFile = fileName;
             var extension = Path.GetExtension(fileName).ToLower();
             var removeTempFile = false;
@@ -381,24 +405,24 @@ namespace Smart.Parser.Adapters
                 || extension == ".xhtml"
                 || extension == ".pdf"
                 || extension == ".doc"
-                || extension == ".rtf"
-                )
+                || extension == ".rtf")
             {
                 try
                 {
                     fileName = this._DocxConverter.ConvertFile2TempDocX(fileName);
                 }
-                catch (System.TypeInitializationException exp)
+                catch (TypeInitializationException exp)
                 {
                     Logger.Error("Type Exception " + exp.ToString());
                     fileName = this._DocxConverter.ConvertWithSoffice(fileName);
                 }
                 catch (Exception exp)
                 {
-                    Logger.Error(string.Format("cannot convert {0} to docx, try one more time (exception: {1}", fileName, exp));
-                    Thread.Sleep(10000); //10 seconds
+                    Logger.Error($"cannot convert {fileName} to docx, try one more time (exception: {exp}");
+                    Thread.Sleep(10000); // 10 seconds
                     fileName = this._DocxConverter.ConvertFile2TempDocX(fileName);
                 }
+
                 removeTempFile = true;
             }
 
@@ -417,6 +441,7 @@ namespace Smart.Parser.Adapters
                     {
                         UriFixer.FixInvalidUri(fs, brokenUri => FixUri(brokenUri));
                     }
+
                     this.ProcessDoc(newFileName, extension, maxRowsToProcess);
                     File.Delete(newFileName);
                 }
@@ -446,18 +471,21 @@ namespace Smart.Parser.Adapters
                 {
                     var cell = new OpenXmlWordCell(c)
                     {
-                        Row = this.TableRows.Count
+                        Row = this.TableRows.Count,
                     };
                     if (ignoreMergedRows)
                     {
                         cell.MergedRowsCount = 1;
                     }
-                    cell.CellWidth = 10; //  no cell width serialized in html
+
+                    cell.CellWidth = 10; // no cell width serialized in html
                     newRow.Add(cell);
                 }
+
                 this.TableRows.Add(newRow);
             }
         }
+
         private void InitFromJson(string fileName)
         {
             string jsonStr;
@@ -465,6 +493,7 @@ namespace Smart.Parser.Adapters
             {
                 jsonStr = r.ReadToEnd();
             }
+
             var portion = JsonConvert.DeserializeObject<TJsonTablePortion>(jsonStr);
             this.Title = portion.Title;
             this.DocumentFile = portion.InputFileName;
@@ -484,15 +513,18 @@ namespace Smart.Parser.Adapters
                 {
                     return i + 1;
                 }
+
                 if (!this.TableRows[i][cellNo].IsVerticallyMerged)
                 {
                     return i;
                 }
+
                 if (i == 0)
                 {
                     return i;
                 }
             }
+
             return 0;
         }
 
@@ -505,15 +537,18 @@ namespace Smart.Parser.Adapters
                 {
                     return i - 1;
                 }
+
                 if (i > startRow && !this.TableRows[i][cellNo].IsVerticallyMerged)
                 {
                     return i - 1;
                 }
+
                 if (i + 1 == this.TableRows.Count)
                 {
                     return i;
                 }
             }
+
             return this.TableRows.Count - 1;
         }
 
@@ -530,7 +565,7 @@ namespace Smart.Parser.Adapters
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine(string.Format("Parsing Exception row{0} col={1}: {2}", c.Row, c.Col, e.ToString()));
+                        Console.WriteLine($"Parsing Exception row{c.Row} col={c.Col}: {e}");
                         throw;
                     }
                 }
@@ -571,12 +606,14 @@ namespace Smart.Parser.Adapters
                         tProp.TableIndentation.Type,
                         docHolder.DocumentPageSizeInPixels);
                 }
+
                 widthInfo.TableIndentionInPixels += docHolder.DocumentPageLeftMaginInPixels;
             }
             else
             {
                 widthInfo.TableWidthInPixels = docHolder.DocumentPageSizeInPixels;
             }
+
             var tGrid = table.GetFirstChild<TableGrid>();
             if (tGrid != null)
             {
@@ -590,10 +627,11 @@ namespace Smart.Parser.Adapters
                             widthInfo.TableWidthInPixels));
                 }
             }
+
             return widthInfo;
         }
 
-        private void ProcessWordTable(WordDocHolder docHolder,  Table table, int maxRowsToProcess)
+        private void ProcessWordTable(WordDocHolder docHolder, Table table, int maxRowsToProcess)
         {
             var rows = table.Descendants<TableRow>().ToList();
             var widthInfo = this.InitializeTableWidthInfo(docHolder, table);
@@ -618,10 +656,12 @@ namespace Smart.Parser.Adapters
                     sumspan += c.MergedColsCount;
                     isEmpty = isEmpty && c.IsEmpty;
                 }
+
                 if (isEmpty)
                 {
                     continue;
                 }
+
                 maxCellsCount = Math.Max(newRow.Count, maxCellsCount);
                 if (r == 0 && this.TableRows.Count > 0 &&
                     BigramsHolder.CheckMergeRow(
@@ -643,7 +683,7 @@ namespace Smart.Parser.Adapters
 
             if (maxCellsCount <= 4 || CheckNameColumnIsEmpty(this.TableRows, saveRowsCount))
             {
-                //remove this suspicious table 
+                // remove this suspicious table
                 this.TableRows.RemoveRange(saveRowsCount, this.TableRows.Count - saveRowsCount);
             }
         }
@@ -653,14 +693,15 @@ namespace Smart.Parser.Adapters
             var debugSaveRowCount = this.TableRows.Count;
             if (table.Descendants<Table>().ToList().Count > 0)
             {
-                Logger.Debug(string.Format("ignore table {0} with subtables", tableIndex));
+                Logger.Debug($"ignore table {tableIndex} with subtables");
             }
-            else if (table.InnerText.Length > 0 && !table.InnerText.Any(x => char.IsUpper(x)))  {
-                Logger.Debug(string.Format("ignore table {0} that has no uppercase char", tableIndex));
+            else if (table.InnerText.Length > 0 && !table.InnerText.Any(x => char.IsUpper(x)))
+            {
+                Logger.Debug($"ignore table {tableIndex} that has no uppercase char");
             }
             else if (table.InnerText.Length < 30)
             {
-                Logger.Debug(string.Format("ignore table {0}, it is too short", tableIndex));
+                Logger.Debug($"ignore table {tableIndex}, it is too short");
             }
             else
             {
@@ -669,13 +710,10 @@ namespace Smart.Parser.Adapters
 
             if (this.TableRows.Count > debugSaveRowCount)
             {
-                var tableText = table.InnerText.Length > 30  ? table.InnerText.Substring(0, 30) : table.InnerText;
-                Logger.Debug(string.Format("add {0} rows (TableRows.Count={1} ) from table {2} Table.innertText[0:30]='{3}'",
-                    this.TableRows.Count - debugSaveRowCount,
-                    this.TableRows.Count,
-                    tableIndex,
-                    tableText));
+                var tableText = table.InnerText.Length > 30 ? table.InnerText.Substring(0, 30) : table.InnerText;
+                Logger.Debug($"add {this.TableRows.Count - debugSaveRowCount} rows (TableRows.Count={this.TableRows.Count} ) from table {tableIndex} Table.innertText[0:30]='{tableText}'");
             }
+
             if (this.Title.Length == 0 && table.InnerText.Length > 30 && table.InnerText.IndexOf("декабря", StringComparison.OrdinalIgnoreCase) != -1)
             {
                 var rows = new List<string>();
@@ -683,6 +721,7 @@ namespace Smart.Parser.Adapters
                 {
                     rows.Add(r.InnerText);
                 }
+
                 this.Title = string.Join("\n", rows);
             }
         }
@@ -700,6 +739,7 @@ namespace Smart.Parser.Adapters
                     tableIndex++;
                 }
             }
+
             if (extension != ".htm" && extension != ".html") // это просто костыль. Нужно как-то встроить это в архитектуру.
             {
                 tables = ExtractSubtables(tables);
@@ -740,6 +780,7 @@ namespace Smart.Parser.Adapters
             {
                 result.Add(r);
             }
+
             return result;
         }
 

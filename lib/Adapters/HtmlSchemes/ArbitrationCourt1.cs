@@ -23,6 +23,7 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
         #region Regex matchers
         protected static Regex _realEstateMatcher = new Regex(@"\s*Недвижимое\s*имущество\s*(\(\s*кв[\. ]*м\s*\)\s*)?",
                                                                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         protected static Regex _realEstateObjectMatcher = new Regex(@"(?<type>[^\(0-9]+)(?<own_type>\([^\)]+\)+)?[\s-]*(?<square_size>[0-9.,]+)?(?:\s*кв.\s?м\.?)?(?<country>[^0-9]*)?", RegexOptions.Compiled);
         protected static Regex _squareMatcher = new Regex(@"\d+(.\d+)*", RegexOptions.Compiled);
         protected static Regex _ownershipMatcher = new Regex(@"(долевая)*(индивидуальная)*\s*собственность");
@@ -32,7 +33,7 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
         #region fields
         protected int _realEstateColumnNum = -1;
         protected int _collegiumColumNum = -1;
-        protected string _collegium = "";
+        protected string _collegium = string.Empty;
         #endregion
 
         #region Logic
@@ -40,7 +41,8 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
         {
             try
             {
-                try {
+                try
+                {
                     this.Document = document;
                     var selection = document.QuerySelectorAll("div.js-income-member-data");
                     if (selection.Length == 0)
@@ -49,7 +51,7 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
                     }
 
                     var name = this.GetPersonName();
-                    return !string.IsNullOrEmpty(name) ;
+                    return !string.IsNullOrEmpty(name);
                 }
                 finally
                 {
@@ -74,22 +76,21 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
             return name;
         }
 
-        public override IEnumerable<IElement> GetMembers( string name, string year)
+        public override IEnumerable<IElement> GetMembers(string name, string year)
         {
             IElement tableElement;
             if (year != null)
             {
                 tableElement = this.Document.All.First(x => x.LocalName == "div" &&
                                                   x.Attributes.Any(y => y.Name == "rel" &&
-                                                                   y.Value == year)
-                                                  );
+                                                                   y.Value == year));
             }
             else
             {
                 throw new NotImplementedException(); // TODO
             }
 
-            var members = tableElement.Children.Where(x=>x.LocalName == "table" || x.LocalName == "div");
+            var members = tableElement.Children.Where(x => x.LocalName == "table" || x.LocalName == "div");
             return members;
         }
 
@@ -106,6 +107,7 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
                 var nameEl = this.Document.QuerySelector("div.b-cardHeader").QuerySelector("h2");
                 name = nameEl.TextContent;
             }
+
             return RemoveNewLineSymbols(name);
         }
 
@@ -141,7 +143,8 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
                     var currYear = int.Parse(yearElement.TextContent);
                     years.Add(currYear);
                 }
-            } else if (divs.Length > 0)
+            }
+            else if (divs.Length > 0)
             {
                 foreach (var yearElement in divs)
                 {
@@ -168,6 +171,7 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
                                           Select(x => int.Parse(x)).
                                           ToList();
             }
+
             return years;
         }
 
@@ -222,12 +226,12 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
                     match = _ownershipMatcher.Match(realEstateText);
                     line.Insert(this._realEstateColumnNum + 2, GetMatchResult(match));
 
-                    line.Insert(this._realEstateColumnNum + 3, "");
+                    line.Insert(this._realEstateColumnNum + 3, string.Empty);
                 }
             }
         }
 
-        protected  void ModifyLinesForCollegium(List<List<string>> lines, bool isMain)
+        protected void ModifyLinesForCollegium(List<List<string>> lines, bool isMain)
         {
             if (this._collegiumColumNum == -1)
             {
@@ -241,7 +245,7 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
             }
             else
             {
-                value = "";
+                value = string.Empty;
             }
 
             for (var i = 1; i < lines.Count; ++i)
@@ -261,7 +265,7 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
             }
 
             headerLine.Add(COLLEGIUM_CAPTION_NAME);
-            this._collegiumColumNum = headerLine.Count-1;
+            this._collegiumColumNum = headerLine.Count - 1;
             var tmp = selection.First().ParentElement;
             tmp = tmp.Children[1];
             this._collegium = tmp.TextContent;

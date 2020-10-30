@@ -8,6 +8,7 @@
     <Compile Remove="tmp\**" />
     <EmbeddedResource Remove="tmp\**" />
     <None Remove="tmp\**" />
+    
   </ItemGroup>
 
 

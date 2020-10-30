@@ -3,7 +3,7 @@
  * Author  : Christian Bolterauer
  * Date    : 8-Aug-2009
  * Version : 1.0
- * Changes : 
+ * Changes :
  * https://www.codeproject.com/Articles/39120/Lightweight-C-Command-Line-Parser
  */
 
@@ -26,7 +26,7 @@ using System.Collections;
 namespace CMDLine
 {
     /// <summary>
-    /// Command Line Parser for creating and parsing command line options
+    /// Command Line Parser for creating and parsing command line options.
     /// </summary>
     /// <remarks> Throws: MissingOptionException, DuplicateOptionException and if set InvalidOptionsException.
     /// </remarks>
@@ -47,7 +47,7 @@ namespace CMDLine
     ///     //add Alias option name
     ///     DebugOption.AddAlias("/Debug");
     ///
-   ///
+    ///
     ///     try
     ///     {
     ///         //parse
@@ -58,37 +58,40 @@ namespace CMDLine
     ///         Console.WriteLine("Error: " + e.Message);
     ///         parser.HelpMessage();
     ///     }
-    ///     parser.Debug();
+    ///     parser.Debug().
     ///
     ///</example>
     public class CMDLineParser
     {
         private string[] _cmdlineArgs = null;
-        private System.Collections.ArrayList SwitchesStore = null;
+        private ArrayList SwitchesStore = null;
         private ArrayList _matchedSwitches = null;
         private ArrayList _unmatchedArgs = null;
         private ArrayList _invalidArgs = null;
 
-        private CMDLineParser.Option _help = null;
+        private Option _help = null;
 
         /// <summary>
-        ///collect not matched (invalid) command line options as invalid args
+        ///collect not matched (invalid) command line options as invalid args.
         /// </summary>
         public bool collectInvalidOptions = true;
+
         /// <summary>
-        ///throw an exception if not matched (invalid) command line options were detected
+        ///throw an exception if not matched (invalid) command line options were detected.
         /// </summary>
         public bool throwInvalidOptionsException = false;
 
         public bool isConsoleApplication = true;
 
         /// <summary>
-        /// create a Command Line Parser for creating and parsing command line options
+        /// create a Command Line Parser for creating and parsing command line options.
         /// </summary>
         public CMDLineParser()
-        { }
+        {
+        }
+
         /// <summary>
-        /// Add a default help switch "-help","-h","-?","/help"
+        /// Add a default help switch "-help","-h","-?","/help".
         /// </summary>
         public Option AddHelpOption()
         {
@@ -98,12 +101,13 @@ namespace CMDLine
             this._help.AddAlias("--help");
             return this._help;
         }
+
         /// <summary>
         /// Parses the command line and sets the values of each registered switch
         /// or parameter option.
         /// </summary>
-        /// <param name="args">The arguments array sent to Main(string[] args)</param>
-        /// <returns>'true' if all parsed options are valid otherwise 'false'</returns>
+        /// <param name="args">The arguments array sent to Main(string[] args).</param>
+        /// <returns>'true' if all parsed options are valid otherwise 'false'.</returns>
         /// <exception cref="MissingOptionException"></exception>
         /// <exception cref="DuplicateOptionException"></exception>
         /// <exception cref="InvalidOptionsException"></exception>
@@ -116,13 +120,15 @@ namespace CMDLine
             {
                 if (this.throwInvalidOptionsException)
                 {
-                    var iopts = "";
+                    var iopts = string.Empty;
                     foreach (string arg in this._invalidArgs)
                     {
                         iopts += "'" + arg + "';";
                     }
+
                     throw new InvalidOptionsException("Invalid command line argument(s): " + iopts);
                 }
+
                 return false;
             }
             else
@@ -130,6 +136,7 @@ namespace CMDLine
                 return true;
             }
         }
+
         /// <summary>
         /// Reset Parser and values of registed options.
         /// </summary>
@@ -147,22 +154,24 @@ namespace CMDLine
                 }
             }
         }
+
         /// <summary>
-        /// Add (a custom) Option (Optional)
+        /// Add (a custom) Option (Optional).
         /// </summary>
         /// <remarks>
         /// To add instances (or subclasses) of 'CMDLineParser.Option'
         /// that implement:
         /// <code>'public override object parseValue(string parameter)'</code>
         /// </remarks>
-        /// <param name="opt">subclass from 'CMDLineParser.Option'</param>
+        /// <param name="opt">subclass from 'CMDLineParser.Option'.</param>
         /// <seealso cref="AddBoolSwitch"/>
         /// <seealso cref="AddStringParameter"/>
         public void AddOption(Option opt)
         {
             this.CheckCmdLineOption(opt.Name);
-            (this.SwitchesStore ??= new System.Collections.ArrayList()).Add(opt);
+            (this.SwitchesStore ??= new ArrayList()).Add(opt);
         }
+
         /// <summary>
         /// Add a basic command line switch.
         /// (exist = 'true' otherwise 'false').
@@ -173,6 +182,7 @@ namespace CMDLine
             this.AddOption(opt);
             return opt;
         }
+
         /// <summary>
         /// Add a string parameter command line option.
         /// </summary>
@@ -182,8 +192,9 @@ namespace CMDLine
             this.AddOption(opt);
             return opt;
         }
+
         /// <summary>
-        /// Check if name is a valid Option name
+        /// Check if name is a valid Option name.
         /// </summary>
         /// <param name="name"></param>
         /// <exception cref="CMDLineParseException"></exception>
@@ -194,8 +205,10 @@ namespace CMDLine
                 throw new CMDLineParserException("Invalid Option:'" + name + "'::" + IS_NOT_A_SWITCH_MSG);
             }
         }
+
         //
         protected const string IS_NOT_A_SWITCH_MSG = "The Switch name does not start with an switch identifier '-' or '/'  or contains space!";
+
         protected static bool isASwitch(string arg) => arg.StartsWith("-") && !arg.Contains(" ");
 
         private void ParseOptions()
@@ -219,11 +232,13 @@ namespace CMDLine
                             idx = this.processMatchedSwitch(s, this._cmdlineArgs, idx);
                         }
                     }
+
                     if (!found)
                     {
                         this.processUnmatchedArg(arg);
                     }
                 }
+
                 this.checkReqired();
             }
         }
@@ -247,10 +262,11 @@ namespace CMDLine
                 {
                     if (optname.Equals(arg))
                     {
-                        s.Name = optname; //set name in case we match an alias name
+                        s.Name = optname; // set name in case we match an alias name
                         return true;
                     }
                 }
+
                 return false;
             }
             else
@@ -263,6 +279,7 @@ namespace CMDLine
                         return true;
                     }
                 }
+
                 return false;
             }
         }
@@ -275,7 +292,7 @@ namespace CMDLine
             }
             else
             {
-                s.Name = optname; //set name in case we match an alias name
+                s.Name = optname; // set name in case we match an alias name
             }
         }
 
@@ -285,7 +302,7 @@ namespace CMDLine
             {
                 if (cmdlineArgs.Length > pos + 1)
                 {
-                    pos++; //change command line index to next cmdline Arg.
+                    pos++; // change command line index to next cmdline Arg.
                     parameter = cmdlineArgs[pos];
                 }
             }
@@ -293,17 +310,19 @@ namespace CMDLine
             {
                 parameter = cmdlineArgs[pos][optname.Length..];
             }
+
             return pos;
         }
 
         protected int processMatchedSwitch(Option s, string[] cmdlineArgs, int pos)
         {
-            //if help switch is matched give help .. only works for console apps
+            // if help switch is matched give help .. only works for console apps
             if (s.Equals(this._help) && this.isConsoleApplication)
             {
                 Console.Write(this.HelpMessage());
             }
-            //process bool switch
+
+            // process bool switch
             if (s.Type == typeof(bool) && !s.needsValue)
             {
                 s.Value = true;
@@ -312,11 +331,11 @@ namespace CMDLine
 
             if (s.needsValue)
             {
-                //retrieve parameter value and adjust pos
-                var parameter = "";
+                // retrieve parameter value and adjust pos
+                var parameter = string.Empty;
                 pos = this.retrieveParameter(ref parameter, s.Name, cmdlineArgs, pos);
-                //parse option using 'IParsableOptionParameter.parseValue(parameter)'
-                //and set parameter value
+                // parse option using 'IParsableOptionParameter.parseValue(parameter)'
+                // and set parameter value
                 try
                 {
                     if (s.Type != null)
@@ -330,27 +349,30 @@ namespace CMDLine
                     throw new ParameterConversionException(ex.Message);
                 }
             }
-            //unsupported type ..
+
+            // unsupported type ..
             throw new CMDLineParserException("Unsupported Parameter Type:" + s.Type);
         }
 
         protected void processUnmatchedArg(string arg)
         {
-            if (this.collectInvalidOptions && isASwitch(arg)) //assuming an invalid comand line option
+            if (this.collectInvalidOptions && isASwitch(arg)) // assuming an invalid comand line option
             {
-                this._invalidArgs.Add(arg); //collect first, throw Exception later if set..
+                this._invalidArgs.Add(arg); // collect first, throw Exception later if set..
             }
             else
             {
                 this._unmatchedArgs.Add(arg);
             }
         }
+
         /// <summary>
-        /// String array of remaining arguments not identified as command line options
+        /// String array of remaining arguments not identified as command line options.
         /// </summary>
         public string[] RemainingArgs() => this._unmatchedArgs == null ? null : (string[])this._unmatchedArgs.ToArray(typeof(string));
+
         /// <summary>
-        /// String array of matched command line options
+        /// String array of matched command line options.
         /// </summary>
         public string[] matchedOptions()
         {
@@ -367,10 +389,12 @@ namespace CMDLine
 
             return (string[])names.ToArray(typeof(string));
         }
+
         /// <summary>
-        /// String array of not identified command line options
+        /// String array of not identified command line options.
         /// </summary>
         public string[] invalidArgs() => this._invalidArgs == null ? null : (string[])this._invalidArgs.ToArray(typeof(string));
+
         /// <summary>
         /// Create usage: A formated help message with a list of registered command line options.
         /// </summary>
@@ -393,6 +417,7 @@ namespace CMDLine
                     len = Math.Max(len, nlen);
                 }
             }
+
             var help = "\nCommand line options are:\n\n";
             var req = false;
             foreach (Option s in this.SwitchesStore)
@@ -413,6 +438,7 @@ namespace CMDLine
                     line += "(*) ";
                     req = true;
                 }
+
                 line += s.Description;
 
                 help += line + "\n";
@@ -429,8 +455,10 @@ namespace CMDLine
                         help += line + "\n";
                     }
                 }
+
                 help += "\n";
             }
+
             if (req)
             {
                 help += "(*) Required.\n";
@@ -438,6 +466,7 @@ namespace CMDLine
 
             return help;
         }
+
         /// <summary>
         /// Print debug information of this CMDLineParser to the system console.
         /// </summary>
@@ -464,6 +493,7 @@ namespace CMDLine
 
                         Console.WriteLine();
                     }
+
                     Console.WriteLine("Required: {0}", s.isRequired);
 
                     Console.WriteLine("Value is: {0} \n",
@@ -492,6 +522,7 @@ namespace CMDLine
                     Console.WriteLine("\nNo Command Line Options detected.");
                 }
             }
+
             Console.Write(this.InvalidArgsMessage());
             Console.WriteLine("\n----------- DEBUG CMDLineParser END -----------\n");
         }
@@ -499,7 +530,7 @@ namespace CMDLine
         private string InvalidArgsMessage()
         {
             const string indent = "  ";
-            var msg = "";
+            var msg = string.Empty;
             if (this._invalidArgs != null)
             {
                 msg += "\nThe following args contain invalid (unknown) options:";
@@ -515,24 +546,28 @@ namespace CMDLine
                     msg += "\n" + indent + "- Non -";
                 }
             }
+
             return msg + "\n";
         }
+
         /// <summary>
-        /// Interface supporting parsing and setting of string parameter Values to objects
+        /// Interface supporting parsing and setting of string parameter Values to objects.
         /// </summary>
         private interface IParsableOptionParameter
         {
             /// <summary>
-            /// parse string parameter to convert to an object
+            /// parse string parameter to convert to an object.
             /// </summary>
             /// <param name="parameter"></param>
-            /// <returns>an object</returns>
+            /// <returns>an object.</returns>
             object parseValue(string parameter);
+
             /// <summary>
-            /// Get or Set the value
+            /// Get or Set the value.
             /// </summary>
             object Value { get; set; }
         }
+
         /// <summary>
         /// A comand line Option: A switch or a string parameter option.
         /// </summary>
@@ -541,12 +576,14 @@ namespace CMDLine
         /// </remarks>
         public class Option : IParsableOptionParameter
         {
-            private System.Collections.ArrayList _Names = null;
+            private ArrayList _Names = null;
             private readonly bool _needsVal = false;
 
-            private Option() { }
+            private Option()
+            {
+            }
 
-            public Option(string name, string description, System.Type type, bool hasval, bool required)
+            public Option(string name, string description, Type type, bool hasval, bool required)
             {
                 this.Type = type;
                 this._needsVal = hasval;
@@ -558,9 +595,9 @@ namespace CMDLine
             {
                 this.Name = name;
                 this.Description = description;
-                this._Names = new System.Collections.ArrayList
+                this._Names = new ArrayList
                 {
-                    name
+                    name,
                 };
             }
 
@@ -571,7 +608,7 @@ namespace CMDLine
                     throw new CMDLineParserException("Invalid Option:'" + alias + "'::" + IS_NOT_A_SWITCH_MSG);
                 }
 
-                (this._Names ??= new System.Collections.ArrayList()).Add(alias);
+                (this._Names ??= new ArrayList()).Add(alias);
             }
 
             public void Clear()
@@ -580,20 +617,22 @@ namespace CMDLine
                 this.Value = null;
             }
 
-            //getters and setters
-            public string Name { get; set; } = "";
+            // getters and setters
+            public string Name { get; set; } = string.Empty;
 
-            public string Description { get; set; } = "";
+            public string Description { get; set; } = string.Empty;
+
             /// <summary>
-            /// Object Type of Option Value (e.g. typeof(int))
+            /// Object Type of Option Value (e.g. typeof(int)).
             /// </summary>
-            public System.Type Type { get; }
+            public Type Type { get; }
 
             public bool needsValue => this._needsVal;
 
             public bool isRequired { get; set; } = false;
+
             /// <summary>
-            /// set to 'true' if Option has been detected on the command line
+            /// set to 'true' if Option has been detected on the command line.
             /// </summary>
             public bool isMatched { get; set; } = false;
 
@@ -609,7 +648,7 @@ namespace CMDLine
                     }
 
                     var list = new ArrayList(this._Names);
-                    list.RemoveAt(0); //remove 'name' (first element) from the list to leave aliases only
+                    list.RemoveAt(0); // remove 'name' (first element) from the list to leave aliases only
                     return (string[])list.ToArray(typeof(string));
                 }
             }
@@ -617,24 +656,25 @@ namespace CMDLine
             public object Value { get; set; } = null;
 
             #region IParsableOptionParameter Member
+
             /// <summary>
             /// Default implementation of parseValue:
             /// Subclasses should override this method to provide a method for converting
-            /// the parsed string parameter to its Object type
+            /// the parsed string parameter to its Object type.
             /// </summary>
             /// <param name="parameter"></param>
-            /// <returns>converted value</returns>
+            /// <returns>converted value.</returns>
             /// <see cref="NumberOption.parseValue"/>
             public virtual object parseValue(string parameter)
             {
-                //set string parameter
+                // set string parameter
                 if (this.Type == typeof(string) && this.needsValue)
                 {
-                    return parameter;//string needs no parsing (conversion) to string...
+                    return parameter;// string needs no parsing (conversion) to string...
                 }
                 else
                 {
-                    //throw Exception when parseValue has not been implemented by a subclass 
+                    // throw Exception when parseValue has not been implemented by a subclass
                     throw new Exception("Option is missing an method to convert the value.");
                 }
             }
@@ -648,43 +688,52 @@ namespace CMDLine
         {
             public CMDLineParserException(string message)
                 : base(message)
-            { }
+            {
+            }
         }
+
         /// <summary>
-        /// Thrown when required option was not detected
+        /// Thrown when required option was not detected.
         /// </summary>
         public class MissingRequiredOptionException : CMDLineParserException
         {
             public MissingRequiredOptionException(string message)
                 : base(message)
-            { }
+            {
+            }
         }
+
         /// <summary>
-        /// Thrown when invalid (not registered) options have been detected
+        /// Thrown when invalid (not registered) options have been detected.
         /// </summary>
         public class InvalidOptionsException : CMDLineParserException
         {
             public InvalidOptionsException(string message)
                 : base(message)
-            { }
+            {
+            }
         }
+
         /// <summary>
-        /// Thrown when duplicate option was detected
+        /// Thrown when duplicate option was detected.
         /// </summary>
         public class DuplicateOptionException : CMDLineParserException
         {
             public DuplicateOptionException(string message)
                 : base(message)
-            { }
+            {
+            }
         }
+
         /// <summary>
-        /// Thrown when parameter value conversion to specified type failed
+        /// Thrown when parameter value conversion to specified type failed.
         /// </summary>
         public class ParameterConversionException : CMDLineParserException
         {
             public ParameterConversionException(string message)
                 : base(message)
-            { }
+            {
+            }
         }
     }
 }

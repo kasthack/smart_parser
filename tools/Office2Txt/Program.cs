@@ -12,33 +12,38 @@ namespace Office2Txt
     {
         private static string ProcessDocxPart(OpenXmlPartRootElement part)
         {
-            var s = "";
+            var s = string.Empty;
             foreach (var p in part.Descendants<Paragraph>())
             {
                 s += p.InnerText + "\n";
             }
+
             return s;
         }
+
         private static string ProcessDocx(string inputFile)
         {
             var doc =
                 WordprocessingDocument.Open(inputFile, false);
-            var s = "";
-            foreach (OpenXmlPart h in doc.MainDocumentPart.HeaderParts) {
+            var s = string.Empty;
+            foreach (OpenXmlPart h in doc.MainDocumentPart.HeaderParts)
+            {
                 s += ProcessDocxPart(h.RootElement);
             }
+
             s += ProcessDocxPart(doc.MainDocumentPart.Document);
             doc.Close();
             return s;
         }
+
         private static void Main(string[] args)
         {
             Smart.Parser.Adapters.AsposeLicense.SetAsposeLicenseFromEnvironment();
             Debug.Assert(args.Length == 2);
-            var  inputFile = args[0];
+            var inputFile = args[0];
             var outFile = args[1];
             var extension = Path.GetExtension(inputFile).ToLower();
-            var text = "";
+            var text = string.Empty;
             if (extension == ".docx")
             {
                 text = ProcessDocx(inputFile);
@@ -48,6 +53,7 @@ namespace Office2Txt
                 Console.WriteLine("cannot process " + inputFile);
                 Environment.Exit(1);
             }
+
             File.WriteAllText(outFile, text);
         }
     }

@@ -12,7 +12,7 @@ namespace Smart.Parser.Adapters
             var crypto = new RijndaelManaged()
             {
                 Key = Convert.FromBase64String("8/ObWvAv8nj0i1XudnLSsDoC8BlW4y1Xem7a45Dqz08="),
-                IV = Convert.FromBase64String("3gwvggWkwQgt7z+/+KMcXg==")
+                IV = Convert.FromBase64String("3gwvggWkwQgt7z+/+KMcXg=="),
             };
             var decryptor = crypto.CreateDecryptor(crypto.Key, crypto.IV);
             var outputStream = new MemoryStream();
@@ -20,25 +20,26 @@ namespace Smart.Parser.Adapters
             {
                 csDecrypt.CopyTo(outputStream);
             }
+
             outputStream.Position = 0;
             return outputStream;
         }
 
-        private static System.IO.Stream GetContentStream(Uri uri)
+        private static Stream GetContentStream(Uri uri)
         {
             var response = WebRequest.Create(uri).GetResponse();
             var result = response.GetResponseStream();
             return !uri.IsFile ? DecryptStream(result) : result;
         }
 
-        public static System.IO.Stream GetAsposeLicenseStream(string uriString)
+        public static Stream GetAsposeLicenseStream(string uriString)
         {
             if (uriString.StartsWith("http"))
             {
                 var uri = new Uri(uriString);
                 try
                 {
-                    return  GetContentStream(new Uri(uriString));
+                    return GetContentStream(new Uri(uriString));
                 }
                 catch
                 {
@@ -50,6 +51,7 @@ namespace Smart.Parser.Adapters
                 return DecryptStream(System.IO.File.OpenRead(uriString));
             }
         }
+
         public static void SetLicense(string uriString)
         {
             if (!Licensed)
@@ -74,6 +76,6 @@ namespace Smart.Parser.Adapters
             }
         }
 
-        public static bool Licensed { set; get; } = false;
+        public static bool Licensed { get; set; } = false;
     }
 }

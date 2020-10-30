@@ -20,7 +20,7 @@ namespace test
             var columnOrdering = ColumnDetector.ExamineTableBeginning(adapter);
             var parser = new Smart.Parser.Lib.Parser(adapter);
             var declaration = parser.Parse(columnOrdering, false, null);
-            var comments = "";
+            var comments = string.Empty;
             var output = DeclarationSerializer.Serialize(declaration, ref comments);
         }
     }

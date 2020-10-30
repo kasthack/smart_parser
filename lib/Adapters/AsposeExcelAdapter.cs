@@ -18,7 +18,8 @@ namespace Smart.Parser.Adapters
             // nobody wants to know how excel represents numbers inside itself
             // for "size_raw"
             this.Text = cell.GetStringValue(Aspose.Cells.CellValueFormatStrategy.DisplayStyle);
-            if (this.Text == "###") {
+            if (this.Text == "###")
+            {
                 this.Text = cell.StringValue;
             }
 
@@ -35,16 +36,18 @@ namespace Smart.Parser.Adapters
                 this.MergedRowsCount = 1;
                 this.FirstMergedRow = cell.Row;
             }
+
             this.Row = cell.Row;
             this.Col = cell.Column;
             this.CellWidth = 0;
-            for (var i = 0; i < this.MergedColsCount;i++)
+            for (var i = 0; i < this.MergedColsCount; i++)
             {
-                //test File17207: GetColumnWidthPixel returns 45, GetColumnWidth returns 0 for the same cell 
+                // test File17207: GetColumnWidthPixel returns 45, GetColumnWidth returns 0 for the same cell
                 this.CellWidth += worksheet.Cells.GetColumnWidthPixel(cell.Column + i);
             }
         }
     }
+
     public class AsposeExcelAdapter : IAdapter
     {
         public override bool IsExcel() => true;
@@ -80,6 +83,7 @@ namespace Smart.Parser.Adapters
                 {
                     break;
                 }
+
                 var cell = row.GetCellOrNull(i);
                 result.Add(new AsposeExcelCell(cell, this.worksheet));
                 if (cell?.IsMerged == true && cell.GetMergedRange().ColumnCount > 1)
@@ -87,6 +91,7 @@ namespace Smart.Parser.Adapters
                     i += cell.GetMergedRange().ColumnCount - 1;
                 }
             }
+
             /*
             IEnumerator enumerator = worksheet.Cells.Rows[rowIndex].GetEnumerator();
             int range_end = -1;
@@ -113,7 +118,7 @@ namespace Smart.Parser.Adapters
             return result;
         }
 
-        public override string GetTitleOutsideTheTable() => "";
+        public override string GetTitleOutsideTheTable() => string.Empty;
 
         private AsposeExcelAdapter(string fileName, int maxRowsToProcess)
         {
@@ -124,7 +129,7 @@ namespace Smart.Parser.Adapters
             this.workbook.Settings.NumberGroupSeparator = ' ';
             // if there are multiple worksheets it is a problem
             // generate exception if more then one non-hidden worksheet
-            //worksheet = workbook.Worksheets[0];
+            // worksheet = workbook.Worksheets[0];
             var wsCount = 0;
             this.worksheet = null;
             var max_rows_count = 0;
@@ -140,10 +145,12 @@ namespace Smart.Parser.Adapters
                     }
                 }
             }
+
             if (wsCount == 0)
             {
-                throw new Exception(string.Format("Excel sheet {0} has no visible worksheets", fileName));
+                throw new Exception($"Excel sheet {fileName} has no visible worksheets");
             }
+
             this.workSheetName = this.worksheet.Name;
 
             this.worksheetCount = wsCount;
@@ -164,13 +171,16 @@ namespace Smart.Parser.Adapters
                         this.worksheet = ws;
                         break;
                     }
+
                     count++;
                 }
             }
+
             if (this.worksheet == null)
             {
                 throw new SmartParserException("wrong  sheet index");
             }
+
             this.workSheetName = this.worksheet.Name;
             this.WorkSheetRows = this.worksheet.Cells.Rows.Count;
         }

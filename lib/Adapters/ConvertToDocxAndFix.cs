@@ -19,10 +19,11 @@ namespace Smart.Parser.Adapters
         protected override WebRequest GetWebRequest(Uri uri)
         {
             var w = base.GetWebRequest(uri);
-            w.Timeout = 5 * 60 *  1000; // 5 minutes
+            w.Timeout = 5 * 60 * 1000; // 5 minutes
             return w;
         }
     }
+
     public static class UriFixer
     {
         public static void FixInvalidUri(Stream fs, Func<string, Uri> invalidUriHandler)
@@ -72,6 +73,7 @@ namespace Smart.Parser.Adapters
                         continue;
                     }
                 }
+
                 if (replaceEntry)
                 {
                     var fullName = entry.FullName;
@@ -84,10 +86,13 @@ namespace Smart.Parser.Adapters
             }
         }
     }
+
     public class DocxConverter
     {
         private readonly string DeclaratorConversionServerUrl;
+
         public DocxConverter(string declaratorConversionServerUrl) => this.DeclaratorConversionServerUrl = declaratorConversionServerUrl;
+
         private static string ToHex(byte[] bytes)
         {
             var result = new StringBuilder(bytes.Length * 2);
@@ -108,20 +113,22 @@ namespace Smart.Parser.Adapters
             {
                 hashValue = ToHex(mySHA256.ComputeHash(fileStream));
             }
+
             using var client = new ConversionServerClient();
             var url = this.DeclaratorConversionServerUrl + "?sha256=" + hashValue;
             if (!url.StartsWith("http://"))
             {
                 url = "http://" + url;
             }
+
             var docXPath = Path.GetTempFileName();
-            Logger.Debug(string.Format("try to download docx from {0} to {1}", url, docXPath));
+            Logger.Debug($"try to download docx from {url} to {docXPath}");
 
             try
             {
                 client.DownloadFile(url, docXPath);
                 Logger.Debug("WebClient.DownloadFile downloaded file successfully");
-                Logger.Debug(string.Format("file {0}, size is {1}", docXPath, new System.IO.FileInfo(docXPath).Length));
+                Logger.Debug($"file {docXPath}, size is {new FileInfo(docXPath).Length}");
             }
             catch (WebException exp)
             {
@@ -139,7 +146,7 @@ namespace Smart.Parser.Adapters
         {
             if (filename.EndsWith("pdf"))
             {
-                if (this.DeclaratorConversionServerUrl != "")
+                if (this.DeclaratorConversionServerUrl != string.Empty)
                 {
                     try
                     {
@@ -156,11 +163,13 @@ namespace Smart.Parser.Adapters
                     Logger.Error("no url for declarator conversion server specified!");
                 }
             }
+
             var docXPath = filename + ".converted.docx";
             if (filename.EndsWith(".html") || filename.EndsWith(".htm"))
             {
                 return this.ConvertWithSoffice(filename);
             }
+
             var saveCulture = Thread.CurrentThread.CurrentCulture;
             // Aspose.Words cannot work well, see 7007_10.html in regression tests
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
@@ -173,25 +182,29 @@ namespace Smart.Parser.Adapters
             System.GC.WaitForPendingFinalizers();
             return docXPath;
         }
+
         public string ConvertWithSoffice(string fileName)
         {
             if (fileName.EndsWith("pdf", StringComparison.OrdinalIgnoreCase))
             {
                 throw new SmartParserException("libre office cannot convert pdf");
             }
+
             var outFileName = Path.ChangeExtension(fileName, "docx");
             if (File.Exists(outFileName))
             {
                 File.Delete(outFileName);
             }
+
             var prg = @"C:\Program Files\LibreOffice\program\soffice.exe";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 prg = "/usr/bin/soffice";
             }
+
             var outdir = Path.GetDirectoryName(outFileName);
-            var args = string.Format(" --headless --writer   --convert-to \"docx:MS Word 2007 XML\"");
-            if (outdir != "")
+            var args = " --headless --writer   --convert-to \"docx:MS Word 2007 XML\"";
+            if (outdir != string.Empty)
             {
                 args += " --outdir " + outdir;
             }
@@ -200,10 +213,17 @@ namespace Smart.Parser.Adapters
             Logger.Debug(prg + " " + args);
             var p = System.Diagnostics.Process.Start(prg, args);
             p.WaitForExit(3 * 60 * 1000); // 3 minutes
-            try { p.Kill(true); } catch (InvalidOperationException) { }
+            try
+            {
+                p.Kill(true);
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
             p.Dispose();
             return !File.Exists(outFileName)
-                ? throw new SmartParserException(string.Format("cannot convert  {0} with soffice", fileName))
+                ? throw new SmartParserException($"cannot convert  {fileName} with soffice")
                 : outFileName;
         }
     }

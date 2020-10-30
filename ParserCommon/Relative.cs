@@ -1,7 +1,4 @@
-﻿using System;
-using System.Xml.Linq;
-
-namespace TI.Declarator.ParserCommon
+﻿namespace TI.Declarator.ParserCommon
 {
     public class Relative : Person
     {

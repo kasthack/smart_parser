@@ -1,54 +1,45 @@
-﻿using Smart.Parser.Adapters;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TI.Declarator.ParserCommon;
 
 namespace Smart.Parser.Adapters
 {
-
-    class AsposeDocCell : Cell
+    internal class AsposeDocCell : Cell
     {
         public AsposeDocCell(Aspose.Words.Tables.Cell cell)
         {
             if (cell == null)
+            {
                 return;
+            }
 
-            String cellText = cell.ToString(Aspose.Words.SaveFormat.Text).Trim();
+            var cellText = cell.ToString(Aspose.Words.SaveFormat.Text).Trim();
 
-            Text = cellText;
+            this.Text = cellText;
 
-            IsEmpty = String.IsNullOrEmpty(Text);
-
-
+            this.IsEmpty = string.IsNullOrEmpty(this.Text);
         }
     }
 
     public class AsposeDocAdapter : IAdapter
     {
-        public static IAdapter CreateAdapter(string fileName)
-        {
-            return new AsposeDocAdapter(fileName);
-        }
+        public static IAdapter CreateAdapter(string fileName) => new AsposeDocAdapter(fileName);
 
         public override Cell GetCell(int row, int column)
         {
-            Aspose.Words.Tables.Cell cell = table.Rows[row].Cells[column];
+            var cell = this.table.Rows[row].Cells[column];
             return new AsposeDocCell(cell);
         }
 
         public override List<Cell> GetCells(int row, int maxColEnd = -1)
         {
-            int index = 0;
-            List<Cell> result = new List<Cell>();
-            IEnumerator enumerator = table.Rows[row].GetEnumerator();
-            int range_end = -1;
+            var index = 0;
+            var result = new List<Cell>();
+            IEnumerator enumerator = this.table.Rows[row].GetEnumerator();
+            const int range_end = -1;
             while (enumerator.MoveNext())
             {
-                Aspose.Words.Tables.Cell cell = (Aspose.Words.Tables.Cell)enumerator.Current;
+                var cell = (Aspose.Words.Tables.Cell)enumerator.Current;
                 if (index < range_end)
                 {
                     index++;
@@ -62,55 +53,42 @@ namespace Smart.Parser.Adapters
             return result;
         }
 
+        public override int GetRowsCount() => this.table.Rows.Count;
 
+        public override int GetColsCount() => this.table.Rows[0].Count;
 
-        public override int GetRowsCount()
-        {
-            return table.Rows.Count;
-        }
-
-        public override int GetColsCount()
-        {
-            return table.Rows[0].Count;
-        }
-
-        public override string GetTitleOutsideTheTable()
-        {
-            return title;
-        }
-
+        public override string GetTitleOutsideTheTable() => this.title;
 
         private AsposeDocAdapter(string fileName)
         {
-            DocumentFile = fileName;
-            Aspose.Words.Document doc = new Aspose.Words.Document(fileName);
-            Aspose.Words.NodeCollection tables = doc.GetChildNodes(Aspose.Words.NodeType.Table, true);
+            this.DocumentFile = fileName;
+            var doc = new Aspose.Words.Document(fileName);
+            var tables = doc.GetChildNodes(Aspose.Words.NodeType.Table, true);
 
-            int count = tables.Count;
+            var count = tables.Count;
             if (count == 0)
             {
                 throw new SystemException("No table found in document " + fileName);
             }
 
+            this.table = (Aspose.Words.Tables.Table)tables[0];
 
-            table = (Aspose.Words.Tables.Table)tables[0];
-
-            Aspose.Words.Node node = table;
+            Aspose.Words.Node node = this.table;
             while (node.PreviousSibling != null)
-            { 
+            {
                 node = node.PreviousSibling;
             }
-            string text = "";
-            while (node.NextSibling != table)
+            var text = "";
+            while (node.NextSibling != this.table)
             {
                 text += node.ToString();
                 node = node.NextSibling;
             }
 
-            title = text;
+            this.title = text;
         }
 
-        private Aspose.Words.Tables.Table table;
-        private string title;
+        private readonly Aspose.Words.Tables.Table table;
+        private readonly string title;
     }
 }

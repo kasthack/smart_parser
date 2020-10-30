@@ -1,5 +1,5 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using Smart.Parser.Adapters;
@@ -11,7 +11,7 @@ namespace test
     {
         private IAdapter GetAdapter()
         {
-            string xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "Test.xlsx");
+            var xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "Test.xlsx");
             return  NpoiExcelAdapter.CreateAdapter(xlsxFile);
         }
         /// <summary>
@@ -20,8 +20,8 @@ namespace test
         [TestMethod]
         public void GetNonMergedCell()
         {
-            var adapter = GetAdapter();
-            Cell cell = adapter.GetCell(0, 13);
+            var adapter = this.GetAdapter();
+            var cell = adapter.GetCell(0, 13);
 
             Assert.IsNotNull(cell);
 
@@ -38,8 +38,8 @@ namespace test
         [TestMethod]
         public void GetCellByIndex()
         {
-            var adapter = GetAdapter();
-            Cell cell1 = adapter.GetCell(0, 13);
+            var adapter = this.GetAdapter();
+            var cell1 = adapter.GetCell(0, 13);
 
             // Check that it is indeed the same cell
             Assert.IsNotNull(cell1);
@@ -50,7 +50,6 @@ namespace test
             Assert.AreEqual("TestCell", cell1.Text);
         }
 
-
         /// <summary>
         /// Empty cells are the cells that contain nothing (except whitespace)
         /// </summary>
@@ -58,14 +57,14 @@ namespace test
         public void GetEmptyCell()
         {
             /// A merged empty cell that contains nothing
-            var adapter = GetAdapter(); 
-            Cell cell1 = adapter.GetCell(75, 2);
+            var adapter = this.GetAdapter();
+            var cell1 = adapter.GetCell(75, 2);
             Assert.IsNotNull(cell1);
             Assert.AreEqual(true, cell1.IsEmpty);
             Assert.AreEqual("", cell1.Text);
 
             // A single empty cell that contains only (4) whitespace characters
-            Cell cell2 = adapter.GetCell(0, 14);
+            var cell2 = adapter.GetCell(0, 14);
             Assert.IsNotNull(cell2);
             Assert.AreEqual(true, cell2.IsEmpty);
             Assert.AreEqual("    ", cell2.Text);
@@ -77,8 +76,8 @@ namespace test
         [TestMethod]
         public void GetMergedCell()
         {
-            var adapter = GetAdapter();
-            Cell cell = adapter.GetCell(4, 1);
+            var adapter = this.GetAdapter();
+            var cell = adapter.GetCell(4, 1);
             Assert.IsNotNull(cell);
 
             Assert.AreEqual(true, cell.IsMerged);
@@ -90,7 +89,7 @@ namespace test
         [TestMethod]
         public void GetRowsCount()
         {
-            var adapter = GetAdapter();
+            var adapter = this.GetAdapter();
             Assert.AreEqual(79, adapter.GetRowsCount());
         }
     }

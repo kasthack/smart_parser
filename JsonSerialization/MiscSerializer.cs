@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 using TI.Declarator.ParserCommon;
 
@@ -26,9 +25,6 @@ namespace TI.Declarator.JsonSerialization
             return res.ToString();
         }
 
-        public static List<ValidationReport> DeserializeValidationReport(string json)
-        {
-            return JsonConvert.DeserializeObject<List<ValidationReport>>(json);
-        }
+        public static List<ValidationReport> DeserializeValidationReport(string json) => JsonConvert.DeserializeObject<List<ValidationReport>>(json);
     }
 }

@@ -1,12 +1,12 @@
 ﻿using AngleSharp.Dom;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace Smart.Parser.Lib.Adapters.HtmlSchemes
 {
-    class ArbitrationCourt2 : ArbitrationCourt1
+    internal class ArbitrationCourt2 : ArbitrationCourt1
     {
         public override bool CanProcess(IDocument document)
         {
@@ -22,15 +22,21 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
             }
         }
 
-
         public override IEnumerable<IElement> GetMembers(string name, string year)
         {
             IElement tableElement;
             if (year != null)
-                tableElement = Document.All.Where(x =>
-                    x.LocalName == "div" && x.Attributes.Any(y => y.Name == "rel" && y.Value == year)).First();
+            {
+                tableElement = this
+                    .Document
+                    .All
+                    .First(x => x.LocalName == "div" && x.Attributes.Any(y => y.Name == "rel" && y.Value == year));
+            }
             else
-                tableElement = Document.QuerySelectorAll("div.b-card-income-container").First();
+            {
+                tableElement = this.Document.QuerySelectorAll("div.b-card-income-container").First();
+            }
+
             var members = tableElement.Children;
             return members;
         }

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace TI.Declarator.ParserCommon
+﻿namespace TI.Declarator.ParserCommon
 {
     public class UnknownEntry
     {

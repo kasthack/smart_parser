@@ -1,44 +1,44 @@
 ﻿using System;
-using Smart.Parser.Adapters;
 using System.Diagnostics;
 using System.IO;
+
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace Office2Txt
 {
-    class Program
+    internal class Program
     {
-        static string ProcessDocxPart(OpenXmlPartRootElement part)
+        private static string ProcessDocxPart(OpenXmlPartRootElement part)
         {
-            string s = "";
+            var s = "";
             foreach (var p in part.Descendants<Paragraph>())
             {
                 s += p.InnerText + "\n";
             }
             return s;
         }
-        static string ProcessDocx(string inputFile)
+        private static string ProcessDocx(string inputFile)
         {
-            WordprocessingDocument doc =
+            var doc =
                 WordprocessingDocument.Open(inputFile, false);
-            string s = "";
+            var s = "";
             foreach (OpenXmlPart h in doc.MainDocumentPart.HeaderParts) {
                 s += ProcessDocxPart(h.RootElement);
-            };
+            }
             s += ProcessDocxPart(doc.MainDocumentPart.Document);
             doc.Close();
             return s;
         }
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Smart.Parser.Adapters.AsposeLicense.SetAsposeLicenseFromEnvironment();
-            Debug.Assert(args.Length == 2);            
-            string  inputFile = args[0];
-            string outFile = args[1];
-            string extension = Path.GetExtension(inputFile).ToLower();
-            string text = "";
+            Debug.Assert(args.Length == 2);
+            var  inputFile = args[0];
+            var outFile = args[1];
+            var extension = Path.GetExtension(inputFile).ToLower();
+            var text = "";
             if (extension == ".docx")
             {
                 text = ProcessDocx(inputFile);

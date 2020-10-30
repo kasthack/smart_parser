@@ -2,7 +2,6 @@
 using Smart.Parser.Adapters;
 using System.IO;
 
-
 namespace test
 {
     [TestClass]
@@ -11,10 +10,9 @@ namespace test
         [TestMethod]
         public void AsposeDocAdapterTest()
         {
-            string docFile = Path.Combine(TestUtil.GetTestDataPath(), "E - min_sport_2012_Rukovoditeli_gospredpriyatij,_podvedomstvennyih_ministerstvu.doc");
+            var docFile = Path.Combine(TestUtil.GetTestDataPath(), "E - min_sport_2012_Rukovoditeli_gospredpriyatij,_podvedomstvennyih_ministerstvu.doc");
             //IAdapter adapter = AsposeExcelAdapter.CreateAsposeExcelAdapter(xlsxFile);
-            IAdapter adapter = AsposeDocAdapter.CreateAdapter(docFile);
-
+            var adapter = AsposeDocAdapter.CreateAdapter(docFile);
         }
     }
 }

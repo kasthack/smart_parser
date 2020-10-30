@@ -1,8 +1,6 @@
 ﻿using AngleSharp.Dom;
-using Aspose.Cells;
-using System;
+
 using System.Collections.Generic;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Smart.Parser.Lib.Adapters.HtmlSchemes
@@ -13,7 +11,6 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
         protected Regex _intMatcher = new Regex(@"\d+", RegexOptions.Compiled);
         #endregion
         public IDocument Document{ get; set; }
-
 
         public abstract IEnumerable<IElement> GetMembers(string name, string year);
         public abstract string GetTitle(string year);
@@ -33,7 +30,5 @@ namespace Smart.Parser.Lib.Adapters.HtmlSchemes
         public abstract void ModifyHeaderForAdditionalFields(List<string> headerLine);
 
         public abstract void ModifyLinesForAdditionalFields(List<List<string>> tableLines, bool isMainDeclarant = false);
-
-
     }
 }

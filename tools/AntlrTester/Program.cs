@@ -1,19 +1,17 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using CMDLine;
 using SmartAntlr;
 using System.Diagnostics;
-using Microsoft.VisualStudio.TestPlatform.CommunicationUtilities.Interfaces;
 
 namespace AntlrTester
 {
-    class Program
+    internal class Program
     {
-        static string ParseType = "realty_all";
-        static string ParseArgs(string[] args)
+        private static string ParseType = "realty_all";
+        private static string ParseArgs(string[] args)
         {
-            CMDLineParser parser = new CMDLineParser();
-            CMDLineParser.Option typeOpt = parser.AddStringParameter("--type", "can bet realty_all, country, default is realty_all", false);
+            var parser = new CMDLineParser();
+            var typeOpt = parser.AddStringParameter("--type", "can bet realty_all, country, default is realty_all", false);
             try
             {
                 //parse the command line
@@ -32,16 +30,16 @@ namespace AntlrTester
                 ParseType = typeOpt.Value.ToString();
             }
             var freeArgs = parser.RemainingArgs();
-            return String.Join(" ", freeArgs).Trim(new char[] { '"' });
+            return string.Join(" ", freeArgs).Trim(new char[] { '"' });
         }
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-            string input = ParseArgs(args);
+            var input = ParseArgs(args);
             var output = input + ".result";
             var texts = AntlrCommon.ReadTestCases(input);
             GeneralAntlrParserWrapper parser = null;
-            Console.Error.Write(String.Format("Grammar {0}\n", ParseType));
+            Console.Error.Write(string.Format("Grammar {0}\n", ParseType));
             if (ParseType == "realty_all")
             {
                 parser = new AntlrStrictParser();

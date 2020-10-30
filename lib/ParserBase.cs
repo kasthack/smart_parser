@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace Smart.Parser.Lib
 {
@@ -10,27 +7,16 @@ namespace Smart.Parser.Lib
         public static bool UseDecimalRawNormalization = false;
         public static NumberFormatInfo ParserNumberFormatInfo = new NumberFormatInfo();
 
-        public ParserBase()
-        {
-            ParserNumberFormatInfo.NumberDecimalSeparator = ",";
-        }
+        public ParserBase() => ParserNumberFormatInfo.NumberDecimalSeparator = ",";
 
         public static string NormalizeRawDecimalForTest(string s)
         {
+            if (!UseDecimalRawNormalization)
+            {
+                return s;
+            }
 
-            if (!UseDecimalRawNormalization) return s;
-            Double v;
-            if (Double.TryParse(s, out v))
-            {
-                return v.ToString(ParserNumberFormatInfo);
-            }
-            else
-            {
-                return s.Replace(".", ",").Replace("\u202f", " ");
-                //return s;
-            }
+            return double.TryParse(s, out var v) ? v.ToString(ParserNumberFormatInfo) : s.Replace(".", ",").Replace("\u202f", " ");
         }
-
-
     }
 }

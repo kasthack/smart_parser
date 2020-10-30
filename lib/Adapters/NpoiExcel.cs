@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
 #if WIN64
 using Microsoft.Office.Interop.Excel;
 #endif
@@ -9,21 +8,19 @@ using NPOI.SS.UserModel;
 using NPOI.SS.Util;
 using NPOI.XSSF.UserModel;
 
-
 using TI.Declarator.ParserCommon;
 using Parser.Lib;
 
 namespace Smart.Parser.Adapters
 {
-
     public class NpoiExcelAdapter : IAdapter
     {
         private XSSFWorkbook WorkBook;
-        int SheetIndex = 0;
-        int SheetCount;
-        private Cell EmptyCell;
+        private int SheetIndex = 0;
+        private readonly int SheetCount;
+        private readonly Cell EmptyCell;
         private int MaxRowsToProcess;
-        private string TempFileName;
+        private readonly string TempFileName;
 #if WIN64
         string ConvertFile2TempXlsX(string filename)
         {
@@ -43,68 +40,61 @@ namespace Smart.Parser.Adapters
             return TempFileName;
         }
 #endif
-        public override bool IsExcel() { return true; }
+        public override bool IsExcel() => true;
 
         public NpoiExcelAdapter(string fileName, int maxRowsToProcess = -1)
         {
-            DocumentFile = fileName;
-            TempFileName = null;
-            string extension = Path.GetExtension(fileName);
+            this.DocumentFile = fileName;
+            this.TempFileName = null;
+            var extension = Path.GetExtension(fileName);
 #if WIN64
             if (extension == ".xls")
             {
                 fileName = ConvertFile2TempXlsX(fileName);
             }
 #endif
-            StreamReader file = new StreamReader(Path.GetFullPath(fileName));
-            WorkBook = new XSSFWorkbook(file.BaseStream);
+            var file = new StreamReader(Path.GetFullPath(fileName));
+            this.WorkBook = new XSSFWorkbook(file.BaseStream);
             //WorkBook = new XSSFWorkbook(Path.GetFullPath(fileName));
-            EmptyCell = new Cell();
-            MaxRowsToProcess = maxRowsToProcess;
+            this.EmptyCell = new Cell();
+            this.MaxRowsToProcess = maxRowsToProcess;
 
-            SheetCount = GetWorkSheetCount(out SheetIndex);
-            WorkBook.SetActiveSheet(SheetIndex);
-            TrimEmptyLines();
+            this.SheetCount = this.GetWorkSheetCount(out this.SheetIndex);
+            this.WorkBook.SetActiveSheet(this.SheetIndex);
+            this.TrimEmptyLines();
         }
 
-        public static IAdapter CreateAdapter(string fileName, int maxRowsToProcess = -1)
-        {
-            return new NpoiExcelAdapter(fileName, maxRowsToProcess);
-        }
+        public static IAdapter CreateAdapter(string fileName, int maxRowsToProcess = -1) => new NpoiExcelAdapter(fileName, maxRowsToProcess);
 
         ~NpoiExcelAdapter()
         {
-            WorkBook = null;
-            if (TempFileName != null) File.Delete(TempFileName);
+            this.WorkBook = null;
+            if (this.TempFileName != null)
+            {
+                File.Delete(this.TempFileName);
+            }
         }
 
-        public override string GetDocumentPosition(int row, int col)
-        {
-            return GetDocumentPositionExcel(row, col);
-        }
-
+        public override string GetDocumentPosition(int row, int col) => this.GetDocumentPositionExcel(row, col);
 
         public Cell GetCell(string cellIndex)
         {
-            CellReference cellRef = new CellReference(cellIndex);
-            return GetCell(cellRef.Row, cellRef.Col);
+            var cellRef = new CellReference(cellIndex);
+            return this.GetCell(cellRef.Row, cellRef.Col);
         }
 
         public override List<Cell> GetCells(int row, int maxColEnd = MaxColumnsCount)
         {
-            int index = 0;
-            List<Cell> result = new List<Cell>();
-            while (true)
+            var index = 0;
+            var result = new List<Cell>();
+            do
             {
-                var cell = GetCell(row, index);
+                var cell = this.GetCell(row, index);
                 result.Add(cell);
 
                 index += cell.MergedColsCount;
-                if (index >= maxColEnd)
-                {
-                    break;
-                }
             }
+            while (index < maxColEnd);
 
             return result;
         }
@@ -112,54 +102,45 @@ namespace Smart.Parser.Adapters
         {
             public int row { get; set; }
             public int column { get; set; }
-            public override int GetHashCode()
-            {
-                return row*100 + column; //maximal 100 columns in excel 
-            }
-            public override bool Equals(object obj)
-            {
-                return Equals(obj as CellAddress);
-            }
-            public bool Equals(CellAddress obj)
-            {
-                return obj != null && obj.row == this.row && obj.column == this.column;
-            }
+            public override int GetHashCode() => (this.row * 100) + this.column; //maximal 100 columns in excel 
+            public override bool Equals(object obj) => this.Equals(obj as CellAddress);
+            public bool Equals(CellAddress obj) => obj != null && obj.row == this.row && obj.column == this.column;
         }
-        Dictionary<CellAddress, Cell> Cache = new Dictionary<CellAddress, Cell>();
-        void InvalidateCache()
-        {
-            Cache.Clear();
-        }
+        private readonly Dictionary<CellAddress, Cell> Cache = new Dictionary<CellAddress, Cell>();
+        private void InvalidateCache() => this.Cache.Clear();
         public override Cell GetCell(int row, int column)
         {
             var address = new CellAddress{row=row, column=column};
-            if (Cache.ContainsKey(address))
+            if (this.Cache.ContainsKey(address))
             {
-                return Cache[address];
+                return this.Cache[address];
             }
-            var c = GetCellWithoutCache(row, column);
-            Cache[address] = c;
+            var c = this.GetCellWithoutCache(row, column);
+            this.Cache[address] = c;
             return c;
         }
-        Cell GetCellWithoutCache(int row, int column)
+        private Cell GetCellWithoutCache(int row, int column)
         {
-            ISheet defaultSheet = WorkBook.GetSheetAt(SheetIndex);
+            var defaultSheet = this.WorkBook.GetSheetAt(this.SheetIndex);
             var currentRow = defaultSheet.GetRow(row);
             if (currentRow == null)
             {
                 //null if row contains only empty cells
-                return EmptyCell;
+                return this.EmptyCell;
             }
-            ICell cell = currentRow.GetCell(column);
-            if (cell == null) return EmptyCell;
-            
-            bool isMergedCell = cell.IsMergedCell;
+            var cell = currentRow.GetCell(column);
+            if (cell == null)
+            {
+                return this.EmptyCell;
+            }
+
+            var isMergedCell = cell.IsMergedCell;
             int firstMergedRow;
             int mergedRowsCount;
             int mergedColsCount;
             if (isMergedCell)
             {
-                CellRangeAddress mergedRegion = GetMergedRegion(defaultSheet, cell);
+                var mergedRegion = this.GetMergedRegion(defaultSheet, cell);
                 firstMergedRow = mergedRegion.FirstRow;
                 mergedRowsCount = mergedRegion.LastRow - mergedRegion.FirstRow + 1;
                 mergedColsCount = mergedRegion.LastColumn - mergedRegion.FirstColumn + 1;
@@ -169,14 +150,13 @@ namespace Smart.Parser.Adapters
                 firstMergedRow = cell.RowIndex;
                 mergedRowsCount = 1;
                 mergedColsCount = 1;
-                
             }
 
             var cellContents = cell.ToString();
-            int cellWidth = 0;
-            for (int i = 0; i < mergedColsCount; i++)
+            var cellWidth = 0;
+            for (var i = 0; i < mergedColsCount; i++)
             {
-                cellWidth += (int)defaultSheet.GetColumnWidth(column + i);
+                cellWidth += defaultSheet.GetColumnWidth(column + i);
                 //   to do npoi
             }
 
@@ -193,48 +173,42 @@ namespace Smart.Parser.Adapters
                 Col = column,
                 CellWidth = cellWidth
             };
-            
         }
 
-        void TrimEmptyLines()
+        private void TrimEmptyLines()
         {
-            int row = GetRowsCount() - 1; 
-            while (row >= 0 && IsEmptyRow(row)) {
-                MaxRowsToProcess = row;
+            var row = this.GetRowsCount() - 1;
+            while (row >= 0 && this.IsEmptyRow(row)) {
+                this.MaxRowsToProcess = row;
                 row--;
             }
         }
 
         public override int GetRowsCount()
         {
-            int rowCount = WorkBook.GetSheetAt(SheetIndex).PhysicalNumberOfRows;
-            if (MaxRowsToProcess != -1)
-            {
-                return Math.Min(MaxRowsToProcess, rowCount);
-            }
-            return rowCount;
+            var rowCount = this.WorkBook.GetSheetAt(this.SheetIndex).PhysicalNumberOfRows;
+            return this.MaxRowsToProcess != -1 ? Math.Min(this.MaxRowsToProcess, rowCount) : rowCount;
         }
 
         public override int GetColsCount()
         {
-            var firstSheet = WorkBook.GetSheetAt(SheetIndex);
+            var firstSheet = this.WorkBook.GetSheetAt(this.SheetIndex);
 
             // firstSheet.GetRow(0) can fail, we have to use enumerators
             var iter = firstSheet.GetRowEnumerator();
             iter.MoveNext();
-            IRow firstRow = (IRow)iter.Current;
-            int firstLineColsCount = firstRow.Cells.Count;
+            var firstRow = (IRow)iter.Current;
+            var firstLineColsCount = firstRow.Cells.Count;
             return firstLineColsCount;
         }
 
-
         private CellRangeAddress GetMergedRegion(ISheet sheet, ICell cell)
         {
-            for (int i = 0; i < sheet.NumMergedRegions; i++)
+            for (var i = 0; i < sheet.NumMergedRegions; i++)
             {
                 var region = sheet.GetMergedRegion(i);
-                if ((region.FirstRow <= cell.RowIndex && cell.RowIndex <= region.LastRow) &&
-                    (region.FirstColumn <= cell.ColumnIndex && cell.ColumnIndex <= region.LastColumn))
+                if (region.FirstRow <= cell.RowIndex && cell.RowIndex <= region.LastRow &&
+                    region.FirstColumn <= cell.ColumnIndex && cell.ColumnIndex <= region.LastColumn)
                 {
                     return region;
                 }
@@ -242,54 +216,51 @@ namespace Smart.Parser.Adapters
 
             throw new Exception($"Could not find merged region containing cell at row#{cell.RowIndex}, column#{cell.ColumnIndex}");
         }
-        public override int GetWorkSheetCount()
-        {
-            int curIndex;
-            return GetWorkSheetCount(out curIndex);
-        }
+        public override int GetWorkSheetCount() => this.GetWorkSheetCount(out var curIndex);
 
         public int GetWorkSheetCount(out int curSheetIndex)
         {
-            int worksheetCount = 0;
+            var worksheetCount = 0;
             curSheetIndex = -1;
-            for (int index = 0; index <  WorkBook.NumberOfSheets; index++)
+            for (var index = 0; index < this.WorkBook.NumberOfSheets; index++)
             {
-                bool hidden = WorkBook.IsSheetHidden(index);
-                var ws = WorkBook[index];
+                var hidden = this.WorkBook.IsSheetHidden(index);
+                var ws = this.WorkBook[index];
                 if (!hidden && ws.LastRowNum > 0)
                 {
                     if (curSheetIndex < 0)
+                    {
                         curSheetIndex = 0;
+                    }
 
                     worksheetCount++;
                 }
             }
             if (worksheetCount == 0)
             {
-                throw new Exception(String.Format("Excel sheet {0} has no visible worksheets", DocumentFile));
+                throw new Exception(string.Format("Excel sheet {0} has no visible worksheets", this.DocumentFile));
             }
 
-            SheetIndex = curSheetIndex;
-            InvalidateCache();
+            this.SheetIndex = curSheetIndex;
+            this.InvalidateCache();
             return worksheetCount;
         }
 
-
         public override void SetCurrentWorksheet(int index)
         {
-            int count = 0;
-            int i = 0;
-            bool found = false;
-            for ( ; i < WorkBook.NumberOfSheets; i++)
+            var count = 0;
+            var i = 0;
+            var found = false;
+            for ( ; i < this.WorkBook.NumberOfSheets; i++)
             {
-                bool hidden = WorkBook.IsSheetHidden(i);
-                var ws = WorkBook[i];
+                var hidden = this.WorkBook.IsSheetHidden(i);
+                var ws = this.WorkBook[i];
 
                 if (!hidden && ws.LastRowNum > 0)
                 {
                     if (count == index)
                     {
-                        SheetIndex = i;
+                        this.SheetIndex = i;
                         found = true;
                         break;
                     }
@@ -300,21 +271,12 @@ namespace Smart.Parser.Adapters
             {
                 throw new SmartParserException("wrong  sheet index");
             }
-            WorkBook.SetActiveSheet(SheetIndex);
-            InvalidateCache();
-            
+            this.WorkBook.SetActiveSheet(this.SheetIndex);
+            this.InvalidateCache();
         }
 
-        public override string GetWorksheetName()
-        {
-            return WorkBook.GetSheetName(SheetIndex);
-        }
+        public override string GetWorksheetName() => this.WorkBook.GetSheetName(this.SheetIndex);
 
-        public override int? GetWorksheetIndex()
-        {
-            return SheetCount == 1 ? null : (int?)SheetIndex;
-        }
-
-
+        public override int? GetWorksheetIndex() => this.SheetCount == 1 ? null : (int?)this.SheetIndex;
     }
 }

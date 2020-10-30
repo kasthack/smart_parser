@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Smart.Parser.Adapters;
 using TI.Declarator.ParserCommon;
 using System.IO;
@@ -14,10 +13,10 @@ namespace test
         [TestMethod]
         public void ColumnDetectorTest1()
         {
-            string xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "fsin_2016_extract.xlsx");
-            IAdapter adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
+            var xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "fsin_2016_extract.xlsx");
+            var adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
 
-            ColumnOrdering ordering = ColumnDetector.ExamineTableBeginning(adapter);
+            var ordering = ColumnDetector.ExamineTableBeginning(adapter);
             Assert.AreEqual(ordering.ColumnOrder.Count, 12);
             Assert.IsTrue(ordering.ColumnOrder[DeclarationField.NameOrRelativeType].BeginColumn == 0);
             Assert.IsTrue(ordering.ColumnOrder[DeclarationField.Occupation].BeginColumn == 1);
@@ -36,10 +35,10 @@ namespace test
         [TestMethod]
         public void EmptyRealStateTypeColumnDetectorTest1()
         {
-            string xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "rabotniki_podved_organizacii_2013.xlsx");
-            IAdapter adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
+            var xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "rabotniki_podved_organizacii_2013.xlsx");
+            var adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
             ColumnPredictor.InitializeIfNotAlready();
-            ColumnOrdering ordering = ColumnDetector.ExamineTableBeginning(adapter);
+            var ordering = ColumnDetector.ExamineTableBeginning(adapter);
             Assert.IsTrue(ordering.ColumnOrder[DeclarationField.Number].BeginColumn == 0);
             Assert.IsTrue(ordering.ColumnOrder[DeclarationField.NameOrRelativeType].BeginColumn == 1);
             Assert.IsTrue(ordering.ColumnOrder[DeclarationField.Occupation].BeginColumn == 2);
@@ -55,19 +54,18 @@ namespace test
             Assert.IsTrue(ordering.ColumnOrder[DeclarationField.DataSources].BeginColumn == 12);
         }
 
- 
         [TestMethod]
         public void ColumnDetectorTest1TIAdapter()
         {
-            string xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "fsin_2016_extract.xlsx");
-            
+            var xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "fsin_2016_extract.xlsx");
+
             //IAdapter adapter = NpoiExcelAdapter.CreateAdapter(xlsxFile);
             // aspose do not want to read column widthes from this file, use aspose
             // fix it in the future (is it a bug in Npoi library?).  
 
-            IAdapter adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
+            var adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
 
-            ColumnOrdering ordering = ColumnDetector.ExamineTableBeginning(adapter);
+            var ordering = ColumnDetector.ExamineTableBeginning(adapter);
             Assert.AreEqual(ordering.ColumnOrder.Count, 12);
             Assert.IsTrue(ordering.ColumnOrder[DeclarationField.NameOrRelativeType].BeginColumn == 0);
             Assert.IsTrue(ordering.ColumnOrder[DeclarationField.Occupation].BeginColumn == 1);
@@ -86,35 +84,34 @@ namespace test
         [TestMethod]
         public void RealEstateColumnDetector()
         {
-            string docxFile = Path.Combine(TestUtil.GetTestDataPath(), "glav_44_2010.doc");
-            IAdapter adapter = OpenXmlWordAdapter.CreateAdapter(docxFile, -1);
+            var docxFile = Path.Combine(TestUtil.GetTestDataPath(), "glav_44_2010.doc");
+            var adapter = OpenXmlWordAdapter.CreateAdapter(docxFile, -1);
 
-            ColumnOrdering ordering = ColumnDetector.ExamineTableBeginning(adapter);
+            var ordering = ColumnDetector.ExamineTableBeginning(adapter);
             Assert.AreEqual(ordering.ColumnOrder.Count, 9);
         }
 
         [TestMethod]
         public void FixVehicleColumns()
         {
-            string xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "17497.xls");
-            IAdapter adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile, -1);
+            var xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "17497.xls");
+            var adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile, -1);
             ColumnPredictor.InitializeIfNotAlready();
 
-            ColumnOrdering ordering = ColumnDetector.ExamineTableBeginning(adapter);
+            var ordering = ColumnDetector.ExamineTableBeginning(adapter);
             Assert.AreEqual(15, ordering.ColumnOrder.Count);
             Assert.IsTrue(ordering.ContainsField(DeclarationField.VehicleType));
             Assert.IsTrue(ordering.ContainsField(DeclarationField.VehicleModel));
             Assert.IsFalse(ordering.ContainsField(DeclarationField.Vehicle));
         }
 
-
         [TestMethod]
         public void RedundantColumnDetector()
         {
-            string docxFile = Path.Combine(TestUtil.GetTestDataPath(), "18664.docx");
-            IAdapter adapter = OpenXmlWordAdapter.CreateAdapter(docxFile, -1);
+            var docxFile = Path.Combine(TestUtil.GetTestDataPath(), "18664.docx");
+            var adapter = OpenXmlWordAdapter.CreateAdapter(docxFile, -1);
 
-            ColumnOrdering ordering = ColumnDetector.ExamineTableBeginning(adapter);
+            var ordering = ColumnDetector.ExamineTableBeginning(adapter);
             Assert.AreEqual(ordering.ColumnOrder.Count, 13);
             Assert.AreEqual(ordering.ColumnOrder[DeclarationField.AcquiredProperty].BeginColumn, 11);
             Assert.AreEqual(ordering.ColumnOrder[DeclarationField.MoneySources].BeginColumn, 12);
@@ -123,10 +120,10 @@ namespace test
         [TestMethod]
         public void TwoRowHeaderEmptyTopCellTest()
         {
-            string docxFile = Path.Combine(TestUtil.GetTestDataPath(), "57715.doc");
-            IAdapter adapter = OpenXmlWordAdapter.CreateAdapter(docxFile, -1);
+            var docxFile = Path.Combine(TestUtil.GetTestDataPath(), "57715.doc");
+            var adapter = OpenXmlWordAdapter.CreateAdapter(docxFile, -1);
 
-            ColumnOrdering ordering = ColumnDetector.ExamineTableBeginning(adapter);
+            var ordering = ColumnDetector.ExamineTableBeginning(adapter);
             Assert.AreEqual(ordering.ColumnOrder.Count, 13);
             Assert.AreEqual(ordering.ColumnOrder[DeclarationField.Vehicle].BeginColumn, 10);
             Assert.AreEqual(ordering.ColumnOrder[DeclarationField.DeclaredYearlyIncome].BeginColumn, 11);
@@ -135,26 +132,23 @@ namespace test
         [TestMethod]
         public void SpendingsWrongColumnTest()
         {
-            string docxFile = Path.Combine(TestUtil.GetTestDataPath(), "82442.doc");
-            IAdapter adapter = OpenXmlWordAdapter.CreateAdapter(docxFile, -1);
+            var docxFile = Path.Combine(TestUtil.GetTestDataPath(), "82442.doc");
+            var adapter = OpenXmlWordAdapter.CreateAdapter(docxFile, -1);
 
-            ColumnOrdering ordering = ColumnDetector.ExamineTableBeginning(adapter);
+            var ordering = ColumnDetector.ExamineTableBeginning(adapter);
             Assert.AreEqual(ordering.ColumnOrder[DeclarationField.DeclaredYearlyIncome].BeginColumn, 1);
         }
-
-        
 
         [TestMethod]
         public void TwoRowHeaderEmptyTopCellTest2()
         {
-            string xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "customs-tworow-header.xls");
-            IAdapter adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
+            var xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "customs-tworow-header.xls");
+            var adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
 
             ColumnPredictor.InitializeIfNotAlready();
-            ColumnOrdering ordering = ColumnDetector.ExamineTableBeginning(adapter);
+            var ordering = ColumnDetector.ExamineTableBeginning(adapter);
             Assert.AreEqual(ordering.ColumnOrder.Count, 14);
             Assert.AreEqual(ordering.ColumnOrder[DeclarationField.Occupation].BeginColumn, 2);
         }
-
     }
 }

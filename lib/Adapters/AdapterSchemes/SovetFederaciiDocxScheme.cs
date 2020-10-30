@@ -1,20 +1,17 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using Parser.Lib;
-using Smart.Parser.Adapters;
 using Smart.Parser.Lib.Adapters.DocxSchemes;
 using TI.Declarator.ParserCommon;
 using Table = DocumentFormat.OpenXml.Wordprocessing.Table;
 using EP.Ner;
-using EP.Ner.Core;
 using EP.Morph;
 
 namespace Smart.Parser.Lib.Adapters.AdapterSchemes
 {
-    class SovetFederaciiDocxScheme : IAdapterScheme
+    internal class SovetFederaciiDocxScheme : IAdapterScheme
     {
         public override bool CanProcess(WordprocessingDocument document)
         {
@@ -22,15 +19,22 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
             var tables = docPart.Document.Descendants<Table>().ToList();
 
             var paragraphs = docPart.Document.Descendants<Paragraph>().ToList();
-            var titles = paragraphs.FindAll(x => x.InnerText.ToLower().Contains("раздел"));
+            var titles = paragraphs.FindAll(x => x.InnerText.Contains("раздел", System.StringComparison.OrdinalIgnoreCase));
 
             if (titles.Count == 0)
+            {
                 return false;
+            }
 
             if (!titles[0].InnerText.Contains("Сведения о доходах"))
+            {
                 return false;
+            }
+
             if (!titles[1].InnerText.Contains("Сведения об имуществе"))
+            {
                 return false;
+            }
 
             var firstTableTitlesOk = tables.Any(
                 x => x.Descendants<TableRow>().Any(
@@ -39,29 +43,30 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
             return firstTableTitlesOk;
         }
 
-
         public override Declaration Parse(Parser parser, int? userDocumentFileId)
         {
             InitializeEP();
 
-            ColumnOrdering columnOrdering = new ColumnOrdering();
+            var columnOrdering = new ColumnOrdering();
             var declaration = parser.InitializeDeclaration(columnOrdering, userDocumentFileId);
-            declaration.Properties.Year = GetYear();
-            declaration.Properties.SheetTitle = FindTitleAboveTheTable();
+            declaration.Properties.Year = this.GetYear();
+            declaration.Properties.SheetTitle = this.FindTitleAboveTheTable();
 
-            var currentDeclarant = CreatePublicServant(columnOrdering);
+            var currentDeclarant = this.CreatePublicServant(columnOrdering);
             declaration.PublicServants.Add(currentDeclarant);
 
-            var tables = Document.Descendants<Table>().ToList();
+            var tables = this.Document.Descendants<Table>().ToList();
 
-            string lastTableProcessor = "";
+            var lastTableProcessor = "";
             Table lastTable;
 
             foreach (var table in tables)
             {
                 var rows = table.Descendants<TableRow>().ToList();
                 if (rows.Count == 0)
+                {
                     continue;
+                }
 
                 var cells = rows[0].Descendants<TableCell>().ToList();
                 var rowText = rows[0].InnerText.OnlyRussianLowercase();
@@ -69,48 +74,43 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
 
                 if (firstCellText == "замещаемаядолжность")
                 {
-                    ProcessPositionTable(table, currentDeclarant);
+                    this.ProcessPositionTable(table, currentDeclarant);
                     lastTableProcessor = "Position";
                 }
-
                 else if (rowText.Contains("ппвиддоходавеличинадоходаруб"))
                 {
-                    ProcessIncomeTable(table, currentDeclarant);
+                    this.ProcessIncomeTable(table, currentDeclarant);
                     lastTableProcessor = "Income";
                 }
-
                 else if (rowText.Contains("ппвидимущества") &&
                          rowText.Contains("собственникимущества"))
                 {
-                    ParseRealEstateTable(table, currentDeclarant, RealtyParser.OwnedString);
+                    this.ParseRealEstateTable(table, currentDeclarant, RealtyParser.OwnedString);
                     lastTableProcessor = "RealEstateOwned";
                 }
-
                 else if (rowText.Contains("ппвидимущества") &&
                          rowText.Contains("находитсявпользовании"))
                 {
-                    ParseRealEstateTable(table, currentDeclarant, RealtyParser.StateString);
+                    this.ParseRealEstateTable(table, currentDeclarant, RealtyParser.StateString);
                     lastTableProcessor = "RealEstateState";
                 }
-
                 else if (rowText.Contains("видимаркатранспорт") &&
                          rowText.Contains("собственник"))
                 {
-                    ParseVehicleTable(table, currentDeclarant);
+                    this.ParseVehicleTable(table, currentDeclarant);
                     lastTableProcessor = "Vehicle";
                 }
                 else
                 {
                     switch (lastTableProcessor)
                     {
-                        case "Vehicle": ParseVehicleTable(table, currentDeclarant); break;
-                        case "RealEstateState": ParseRealEstateTable(table, currentDeclarant, RealtyParser.StateString); break;
-                        case "RealEstateOwned": ParseRealEstateTable(table, currentDeclarant, RealtyParser.OwnedString); break;
+                        case "Vehicle": this.ParseVehicleTable(table, currentDeclarant); break;
+                        case "RealEstateState": this.ParseRealEstateTable(table, currentDeclarant, RealtyParser.StateString); break;
+                        case "RealEstateOwned": this.ParseRealEstateTable(table, currentDeclarant, RealtyParser.OwnedString); break;
                     }
                 }
 
                 lastTable = table;
-
             }
 
             return declaration;
@@ -145,7 +145,7 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
         private void ParseVehicleTable(Table table, PublicServant person)
         {
             var rows = table.Descendants<TableRow>().ToList().Skip(1);
-            string currentVehicleType = "";
+            var currentVehicleType = "";
             foreach (var row in rows)
             {
                 var cells = row.Descendants<TableCell>().ToList();
@@ -161,7 +161,9 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
 
                 var textStr = cells[1].InnerText;
                 if (textStr.OnlyRussianLowercase() == "неимеет")
+                {
                     continue;
+                }
 
                 var ownerStr = cells[2].InnerText;
                 var owners = ownerStr.Split(",").ToList();
@@ -173,7 +175,7 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
                     var relationType = DataHelper.ParseRelationType(owner, false);
                     if (DataHelper.IsRelativeInfo(owner))
                     {
-                        var relative = GetPersonRelative(person, relationType);
+                        var relative = this.GetPersonRelative(person, relationType);
                         relative.Vehicles.Add(vehicle);
                     }
                     else
@@ -201,8 +203,11 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
                 if (incomeType.StartsWith("декларированныйгодовойдоход"))
                 {
                     var incomeRaw = cells[2].InnerText.Trim();
-                    if (incomeRaw == "")
+                    if (incomeRaw?.Length == 0)
+                    {
                         continue;
+                    }
+
                     person.DeclaredYearlyIncomeRaw = incomeRaw;
                     person.DeclaredYearlyIncome = DataHelper.ParseDeclaredIncome(incomeRaw, false);
                 }
@@ -210,10 +215,12 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
                 {
                     var incomeRaw = cells[2].InnerText.Trim();
                     var relationType = DataHelper.ParseRelationType(incomeType, false);
-                    var relative = new Relative();
-                    relative.RelationType = relationType;
-                    relative.DeclaredYearlyIncomeRaw = incomeRaw;
-                    relative.DeclaredYearlyIncome = DataHelper.ParseDeclaredIncome(incomeRaw, false);
+                    var relative = new Relative
+                    {
+                        RelationType = relationType,
+                        DeclaredYearlyIncomeRaw = incomeRaw,
+                        DeclaredYearlyIncome = DataHelper.ParseDeclaredIncome(incomeRaw, false)
+                    };
                     person.AddRelative(relative);
                 }
             }
@@ -222,7 +229,7 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
         private void ParseRealEstateTable(Table table, PublicServant person, string ownTypeByColumn)
         {
             var rows = table.Descendants<TableRow>().ToList().Skip(1);
-            string currentRealEstateType = "";
+            var currentRealEstateType = "";
             foreach (var row in rows)
             {
                 var cells = row.Descendants<TableCell>().ToList();
@@ -238,7 +245,10 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
 
                 var textStr = cells[1].InnerText;
                 if (textStr.OnlyRussianLowercase() == "неимеет")
+                {
                     continue;
+                }
+
                 var areaStr = cells[2].InnerText;
                 var countryStr = cells[3].InnerText;
                 var ownerStr = cells[4].InnerText;
@@ -253,14 +263,14 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
                 }
 
                 if (shares.Count < owners.Count)
+                {
                     shares = Enumerable.Repeat<string>(null, owners.Count - shares.Count).ToList();
+                }
 
                 var zippedOwners = owners.Zip(shares);
 
-                foreach (var pair in zippedOwners)
+                foreach (var (owner, share) in zippedOwners)
                 {
-                    var owner = pair.First;
-                    var share = pair.Second;
                     var realEstateProperty = new RealEstateProperty
                     {
                         Text = textStr,
@@ -272,12 +282,14 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
                     };
 
                     if (share != default)
+                    {
                         realEstateProperty.own_type_raw = share;
+                    }
 
                     var relationType = DataHelper.ParseRelationType(owner, false);
                     if (DataHelper.IsRelativeInfo(owner))
                     {
-                        var relative = GetPersonRelative(person, relationType);
+                        var relative = this.GetPersonRelative(person, relationType);
                         relative.RealEstateProperties.Add(realEstateProperty);
                     }
                     else
@@ -291,27 +303,35 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
         private Relative GetPersonRelative(PublicServant person, RelationType relationType)
         {
             var foundRelatives = person.Relatives.Where(x => x.RelationType == relationType).ToList();
-            if (foundRelatives.Count != 0) return foundRelatives[0];
-            var relative = new Relative();
-            relative.RelationType = relationType;
+            if (foundRelatives.Count != 0)
+            {
+                return foundRelatives[0];
+            }
+
+            var relative = new Relative
+            {
+                RelationType = relationType
+            };
             person.AddRelative(relative);
             return relative;
         }
 
         private PublicServant CreatePublicServant(ColumnOrdering columnOrdering)
         {
-            var currentDeclarant = new PublicServant();
-            currentDeclarant.NameRaw = GetPersonName();
-            currentDeclarant.Ordering = columnOrdering;
-            currentDeclarant.Index = 1;
+            var currentDeclarant = new PublicServant
+            {
+                NameRaw = this.GetPersonName(),
+                Ordering = columnOrdering,
+                Index = 1
+            };
             return currentDeclarant;
         }
 
         public string FindTitleAboveTheTable()
         {
-            string title = "";
-            var body = Document.Body;
-            foreach (var p in Document.Descendants<Paragraph>())
+            var title = "";
+            var body = this.Document.Body;
+            foreach (var p in this.Document.Descendants<Paragraph>())
             {
                 if (p.Parent != body)
                 {
@@ -326,10 +346,10 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
 
         private int GetYear()
         {
-            var paragraphs = Document.Descendants<Paragraph>().ToList();
+            var paragraphs = this.Document.Descendants<Paragraph>().ToList();
             var p = paragraphs.Find(x => x.InnerText.StartsWith("Сведения представлены за"));
             var decemberYearMatches = Regex.Matches(p.InnerText, @"(31\s+декабря\s+)(20\d\d)(\s+года)");
-            int year = 0;
+            var year = 0;
             if (decemberYearMatches.Count > 0)
             {
                 year = int.Parse(decemberYearMatches[0].Groups[2].Value);
@@ -340,14 +360,14 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
 
         private string GetPersonName()
         {
-            var paragraphs = Document.Descendants<Paragraph>().ToList();
-            string txt = FindTitleAboveTheTable();
+            var paragraphs = this.Document.Descendants<Paragraph>().ToList();
+            var txt = this.FindTitleAboveTheTable();
 
             // создаём экземпляр обычного процессора
-            using (Processor proc = ProcessorService.CreateProcessor())
+            using (var proc = ProcessorService.CreateProcessor())
             {
                 // анализируем текст
-                AnalysisResult ar = proc.Process(new SourceOfAnalysis(txt));
+                var ar = proc.Process(new SourceOfAnalysis(txt));
                 var nameEntity = ar.Entities.ToList().Find(x => x.TypeName == "PERSON");
                 if (nameEntity != default)
                 {
@@ -355,7 +375,7 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
                     return $"{t[2]} {t[0]} {t[1]}";
                 }
             }
-            
+
             return default;
         }
     }

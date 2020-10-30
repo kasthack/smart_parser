@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace TI.Declarator.ParserCommon
+﻿namespace TI.Declarator.ParserCommon
 {
-    public enum DeclarationField : UInt32
+    public enum DeclarationField : uint
     {
         // the second byte
         StartsWithDigitMask = 0b00000001_00000000,
@@ -16,7 +13,7 @@ namespace TI.Declarator.ParserCommon
         State =               0b10000000_00000000,
         Mixed =               Owned | State,
         AllOwnTypes =         Mixed | Owned | State,
-        
+
         // the third byte
         MainDeclarant =   0b00000001_00000000_00000000,
         DeclarantSpouse = 0b00000010_00000000_00000000,
@@ -44,7 +41,6 @@ namespace TI.Declarator.ParserCommon
         DeclaredYearlyIncomeThousands = 11 | StartsWithDigitMask,
         DataSources = 12,
 
-
         // Для случая, когда один и тот же набор колонок содержит сведения и о частной, и о государственной собственности
         MixedRealEstateType = Mixed | RealtyTypeMask,
         MixedRealEstateSquare = Mixed | SquareMask,
@@ -69,7 +65,7 @@ namespace TI.Declarator.ParserCommon
         DeclarantIncome = MainDeclarant | DeclaredYearlyIncome,
         SpouseIncome = DeclarantSpouse | DeclaredYearlyIncome,
         ChildIncome = DeclarantChild | DeclaredYearlyIncome,
-        
+
         DeclarantIncomeInThousands = MainDeclarant | DeclaredYearlyIncomeThousands,
         SpouseIncomeInThousands = DeclarantSpouse | DeclaredYearlyIncomeThousands,
         ChildIncomeInThousands = DeclarantChild | DeclaredYearlyIncomeThousands,
@@ -87,7 +83,6 @@ namespace TI.Declarator.ParserCommon
         StatePropertyOwnershipType = State | OwnershipTypeMask,
         StateColumnWithNaturalText = State | NaturalText,
 
-        
         // Поля, которые мы собираем, но пока не сохраняем в JSON
         AcquiredProperty = 101,
         MoneySources = 102,
@@ -98,7 +93,6 @@ namespace TI.Declarator.ParserCommon
         Stocks = 107,
         MainWorkPositionIncome = 108,
         Spendings = 109
-        
-    }
 
+    }
 }

@@ -1,39 +1,33 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+
 using Antlr4.Runtime;
 
 namespace SmartAntlr
 {
-
     public class SquareListVisitor : SquareListBaseVisitor<object>
     {
         public List<GeneralParserPhrase> Lines = new List<GeneralParserPhrase>();
         public GeneralAntlrParserWrapper ParserWrapper;
 
-        public SquareListVisitor(GeneralAntlrParserWrapper parser)
-        {
-            ParserWrapper = parser;
-        }
+        public SquareListVisitor(GeneralAntlrParserWrapper parser) => this.ParserWrapper = parser;
         public override object VisitBareScore(SquareList.BareScoreContext context)
         {
-            int start = context.Start.StartIndex;
-            int end = context.Stop.StopIndex;
-            string debug = context.ToStringTree(ParserWrapper.Parser);
-            var line = new GeneralParserPhrase(ParserWrapper, context);
-            Lines.Add(line);
+            var start = context.Start.StartIndex;
+            var end = context.Stop.StopIndex;
+            var debug = context.ToStringTree(this.ParserWrapper.Parser);
+            var line = new GeneralParserPhrase(this.ParserWrapper, context);
+            this.Lines.Add(line);
             return line;
         }
     }
 
-
     public class AntlrSquareParser : GeneralAntlrParserWrapper
     {
-    
         public override List<GeneralParserPhrase> Parse(string inputText)
         {
-            InitLexer(inputText);
-            var parser = new SquareList(CommonTokenStream, Output, ErrorOutput);
-            Parser = parser;
+            this.InitLexer(inputText);
+            var parser = new SquareList(this.CommonTokenStream, this.Output, this.ErrorOutput);
+            this.Parser = parser;
             parser.ErrorHandler = new BailErrorStrategy();
             try
             {
@@ -42,18 +36,14 @@ namespace SmartAntlr
                 visitor.Visit(context);
                 return visitor.Lines;
             }
-            catch (Antlr4.Runtime.Misc.ParseCanceledException e)
+            catch (Antlr4.Runtime.Misc.ParseCanceledException)
             {
                 return new List<GeneralParserPhrase>();
             }
-            catch (RecognitionException e)
+            catch (RecognitionException)
             {
                 return new List<GeneralParserPhrase>();
             }
-
         }
-
-
-
     }
 }

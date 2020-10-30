@@ -9,27 +9,22 @@ namespace Smart.Parser.Lib
     {
         static public void WriteJson(string file, object data)
         {
-
-            string jsonText = JsonConvert.SerializeObject(data, new KeyValuePairConverter());
+            var jsonText = JsonConvert.SerializeObject(data, new KeyValuePairConverter());
 
             System.IO.File.WriteAllText(file, jsonText);
         }
 
-        static public string CreateJson(object data)
-        {
-            return JsonConvert.SerializeObject(data, new KeyValuePairConverter()); ;
-        }
-
+        static public string CreateJson(object data) => JsonConvert.SerializeObject(data, new KeyValuePairConverter());
 
         static public T ReadJson<T>(string file)
         {
-            string jsonText = System.IO.File.ReadAllText(file);
+            var jsonText = System.IO.File.ReadAllText(file);
             return JsonConvert.DeserializeObject<T>(jsonText);
         }
 
         static public string SerializeCell(Cell cell)
         {
-            string jsonText = CreateJson(cell);
+            var jsonText = CreateJson(cell);
             return jsonText;
         }
     };

@@ -1,10 +1,6 @@
-﻿using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Smart.Parser.Adapters;
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using TI.Declarator.ParserCommon;
-using System.IO;
 using Smart.Parser.Lib;
-using System.Collections.Generic;
 
 namespace test
 {
@@ -17,8 +13,8 @@ namespace test
         [TestMethod]
         public void TestParseSquare()
         {
-            string square = "доля 1/1876 от 802898980";
-            Decimal? result = DataHelper.ParseSquare(square);
+            const string square = "доля 1/1876 от 802898980";
+            var result = DataHelper.ParseSquare(square);
 
             Assert.IsNull(result);
         }
@@ -26,12 +22,11 @@ namespace test
         [TestMethod]
         public void TestOnlyRussianRegex()
         {
-            string s = "годо-вой дох-од в 2019 –()";
-            string result = s.OnlyRussianLowercase();
-            Assert.AreEqual("годовойдоходв", result);   
+            const string s = "годо-вой дох-од в 2019 –()";
+            var result = s.OnlyRussianLowercase();
+            Assert.AreEqual("годовойдоходв", result);
         }
 
-        
         [TestMethod]
         public void TestParseNames()
         {
@@ -50,20 +45,19 @@ namespace test
         [TestMethod]
         public void TestPublicServantInfo()
         {
-            bool result = DataHelper.IsPublicServantInfo("ребенок");
+            var result = DataHelper.IsPublicServantInfo("ребенок");
             Assert.IsFalse(result);
         }
 
         [TestMethod]
         public void TestReadSquareAndCountry()
         {
-            string s = "1 Россия";
+            var s = "1 Россия";
             decimal square = -1;
-            string country;
-            DataHelper.ReadSquareAndCountry(s, out square, out country);
+            DataHelper.ReadSquareAndCountry(s, out square, out var country);
             Assert.IsTrue(square == 1);
             Assert.IsTrue(country == "Россия");
-            
+
             s = "(Россия)";
             square = -1;
             DataHelper.ReadSquareAndCountry(s, out square, out country);
@@ -73,14 +67,11 @@ namespace test
         [TestMethod]
         public void TestParseDocumentFileName()
         {
-            string file1 = @"min_agr_new/2013/9037/dep_gos_slyzhbi_2013.xls";
-            string file2 = @"Ministries/min_agr_new/2014/30202.xls";
-            string file3 = @"Test Samples/2577/6.docx";
+            const string file1 = "min_agr_new/2013/9037/dep_gos_slyzhbi_2013.xls";
+            const string file2 = "Ministries/min_agr_new/2014/30202.xls";
+            const string file3 = "Test Samples/2577/6.docx";
 
-            int? id;
-            string archive_file;
-
-            bool result = DataHelper.ParseDocumentFileName(file1, out id, out archive_file);
+            var result = DataHelper.ParseDocumentFileName(file1, out var id, out var archive_file);
             Assert.IsTrue(result);
             Assert.AreEqual(9037, id.Value);
             Assert.AreEqual("dep_gos_slyzhbi_2013.xls", archive_file);
@@ -95,6 +86,5 @@ namespace test
             Assert.AreEqual(2577, id.Value);
             Assert.AreEqual("6.docx", archive_file);
         }
-
     }
 }

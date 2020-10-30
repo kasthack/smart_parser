@@ -9,37 +9,37 @@ namespace SmartAntlr
         public string OwnType = "";
         public string RealtyShare = "";
 
-        public RealtyTypeAndOwnTypeFromText(GeneralAntlrParserWrapper parser, RealtyTypeAndOwnType.RealtyContext context) : 
+        public RealtyTypeAndOwnTypeFromText(GeneralAntlrParserWrapper parser, RealtyTypeAndOwnType.RealtyContext context) :
             base(parser, context)
         {
             if (context.own_type() != null)
             {
-                OwnType = context.own_type().OWN_TYPE().GetText();
+                this.OwnType = context.own_type().OWN_TYPE().GetText();
             }
             if (context.realty_type() != null)
             {
-                RealtyType = context.realty_type().REALTY_TYPE().GetText();
+                this.RealtyType = context.realty_type().REALTY_TYPE().GetText();
             }
-            
-            if (context.own_type() != null && context.own_type().realty_share() != null)
+
+            if (context.own_type()?.realty_share() != null)
             {
-                RealtyShare = context.own_type().realty_share().GetText();
+                this.RealtyShare = context.own_type().realty_share().GetText();
             }
             if (context.realty_share() != null)
             {
-                RealtyShare = context.realty_share().GetText();
+                this.RealtyShare = context.realty_share().GetText();
             }
         }
         public override string GetJsonString()
         {
             var my_jsondata = new Dictionary<string, string>
             {
-                { "OwnType", OwnType},
-                { "RealtyType",  RealtyType},
+                { "OwnType", this.OwnType},
+                { "RealtyType",  this.RealtyType},
             };
-            if (RealtyShare != "")
+            if (this.RealtyShare != "")
             {
-                my_jsondata["RealtyShare"] = RealtyShare;
+                my_jsondata["RealtyShare"] = this.RealtyShare;
             }
             return JsonConvert.SerializeObject(my_jsondata, Formatting.Indented);
         }
@@ -50,14 +50,11 @@ namespace SmartAntlr
         public List<GeneralParserPhrase> Lines = new List<GeneralParserPhrase>();
         public GeneralAntlrParserWrapper Parser;
 
-        public RealtyTypeAndOwnTypeVisitor(GeneralAntlrParserWrapper parser)
-        {
-            Parser = parser;
-        }
+        public RealtyTypeAndOwnTypeVisitor(GeneralAntlrParserWrapper parser) => this.Parser = parser;
         public override object VisitRealty(RealtyTypeAndOwnType.RealtyContext context)
         {
-            var line = new RealtyTypeAndOwnTypeFromText(Parser, context);
-            Lines.Add(line);
+            var line = new RealtyTypeAndOwnTypeFromText(this.Parser, context);
+            this.Lines.Add(line);
             return line;
         }
     }
@@ -66,13 +63,12 @@ namespace SmartAntlr
     {
         public override List<GeneralParserPhrase> Parse(string inputText)
         {
-            InitLexer(inputText);
-            var parser = new RealtyTypeAndOwnType(CommonTokenStream, Output, ErrorOutput);
+            this.InitLexer(inputText);
+            var parser = new RealtyTypeAndOwnType(this.CommonTokenStream, this.Output, this.ErrorOutput);
             var context = parser.realty_list();
             var visitor = new RealtyTypeAndOwnTypeVisitor(this);
             visitor.Visit(context);
             return visitor.Lines;
         }
-
     }
 }

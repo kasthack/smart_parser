@@ -1,8 +1,4 @@
-﻿using System;
-using System.Globalization;
-using System.Xml.Linq;
-
-namespace TI.Declarator.ParserCommon
+﻿namespace TI.Declarator.ParserCommon
 {
     public class RealEstateProperty
     {
@@ -18,6 +14,5 @@ namespace TI.Declarator.ParserCommon
 
         public RealEstateProperty()
         {}
-
     }
 }

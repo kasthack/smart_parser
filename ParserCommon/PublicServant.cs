@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Xml.Linq;
+﻿using System.Collections.Generic;
 
 namespace TI.Declarator.ParserCommon
 {
@@ -14,20 +12,14 @@ namespace TI.Declarator.ParserCommon
 
         public void AddRelative(Relative relative)
         {
-            relative.PersonIndex = relatives.Count + 1;
-            relatives.Add(relative);
+            relative.PersonIndex = this.relatives.Count + 1;
+            this.relatives.Add(relative);
         }
 
-        public IEnumerable<Relative> Relatives
-        {
-            get
-            {
-                return relatives;
-            }
-        }
+        public IEnumerable<Relative> Relatives => this.relatives;
 
-        List<Relative> relatives = new List<Relative>();
-        public override int? PersonIndex { get { return null; } }
+        private readonly List<Relative> relatives = new List<Relative>();
+        public override int? PersonIndex => null;
         public ColumnOrdering Ordering;
     }
 }

@@ -1,7 +1,7 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
+
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Smart.Parser.Lib;
+
 using Smart.Parser.Adapters;
 
 namespace test
@@ -12,8 +12,8 @@ namespace test
         [TestMethod]
         public void XlsxTypeCTest()
         {
-            string xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "fsin_2016_extract.xlsx");
-            IAdapter adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
+            var xlsxFile = Path.Combine(TestUtil.GetTestDataPath(), "fsin_2016_extract.xlsx");
+            var adapter = AsposeExcelAdapter.CreateAdapter(xlsxFile);
             //Parser parser = new Parser(adapter);
 
             //parser.Process();

@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Parser.Lib
 {
@@ -18,5 +14,4 @@ namespace Parser.Lib
     {
         public SmartParserRelativeWithoutPersonException(string message) : base(message) { }
     }
-
 }

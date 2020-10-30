@@ -14,12 +14,11 @@ using TI.Declarator.ParserCommon;
 
 namespace Smart.Parser.Adapters
 {
-
     public class ConversionServerClient : WebClient
     {
         protected override WebRequest GetWebRequest(Uri uri)
         {
-            WebRequest w = base.GetWebRequest(uri);
+            var w = base.GetWebRequest(uri);
             w.Timeout = 5 * 60 *  1000; // 5 minutes
             return w;
         }
@@ -29,149 +28,142 @@ namespace Smart.Parser.Adapters
         public static void FixInvalidUri(Stream fs, Func<string, Uri> invalidUriHandler)
         {
             XNamespace relNs = "http://schemas.openxmlformats.org/package/2006/relationships";
-            using (ZipArchive za = new ZipArchive(fs, ZipArchiveMode.Update))
+            using var za = new ZipArchive(fs, ZipArchiveMode.Update);
+            foreach (var entry in za.Entries.ToList())
             {
-                foreach (var entry in za.Entries.ToList())
+                if (!entry.Name.EndsWith(".rels"))
                 {
-                    if (!entry.Name.EndsWith(".rels"))
-                        continue;
-                    bool replaceEntry = false;
-                    XDocument entryXDoc = null;
-                    using (var entryStream = entry.Open())
+                    continue;
+                }
+
+                var replaceEntry = false;
+                XDocument entryXDoc = null;
+                using (var entryStream = entry.Open())
+                {
+                    try
                     {
-                        try
+                        entryXDoc = XDocument.Load(entryStream);
+                        if (entryXDoc.Root != null && entryXDoc.Root.Name.Namespace == relNs)
                         {
-                            entryXDoc = XDocument.Load(entryStream);
-                            if (entryXDoc.Root != null && entryXDoc.Root.Name.Namespace == relNs)
+                            var urisToCheck = entryXDoc
+                                .Descendants(relNs + "Relationship")
+                                .Where(r => r.Attribute("TargetMode") != null && (string)r.Attribute("TargetMode") == "External");
+                            foreach (var rel in urisToCheck)
                             {
-                                var urisToCheck = entryXDoc
-                                    .Descendants(relNs + "Relationship")
-                                    .Where(r => r.Attribute("TargetMode") != null && (string)r.Attribute("TargetMode") == "External");
-                                foreach (var rel in urisToCheck)
+                                var target = (string)rel.Attribute("Target");
+                                if (target != null)
                                 {
-                                    var target = (string)rel.Attribute("Target");
-                                    if (target != null)
+                                    try
                                     {
-                                        try
-                                        {
-                                            Uri uri = new Uri(target);
-                                        }
-                                        catch (UriFormatException)
-                                        {
-                                            Uri newUri = invalidUriHandler(target);
-                                            rel.Attribute("Target").Value = newUri.ToString();
-                                            replaceEntry = true;
-                                        }
+                                        var uri = new Uri(target);
+                                    }
+                                    catch (UriFormatException)
+                                    {
+                                        var newUri = invalidUriHandler(target);
+                                        rel.Attribute("Target").Value = newUri.ToString();
+                                        replaceEntry = true;
                                     }
                                 }
                             }
                         }
-                        catch (XmlException)
-                        {
-                            continue;
-                        }
                     }
-                    if (replaceEntry)
+                    catch (XmlException)
                     {
-                        var fullName = entry.FullName;
-                        entry.Delete();
-                        var newEntry = za.CreateEntry(fullName);
-                        using (StreamWriter writer = new StreamWriter(newEntry.Open()))
-                        using (XmlWriter xmlWriter = XmlWriter.Create(writer))
-                        {
-                            entryXDoc.WriteTo(xmlWriter);
-                        }
+                        continue;
                     }
+                }
+                if (replaceEntry)
+                {
+                    var fullName = entry.FullName;
+                    entry.Delete();
+                    var newEntry = za.CreateEntry(fullName);
+                    using var writer = new StreamWriter(newEntry.Open());
+                    using var xmlWriter = XmlWriter.Create(writer);
+                    entryXDoc.WriteTo(xmlWriter);
                 }
             }
         }
     }
     public class DocxConverter
     {
-        string DeclaratorConversionServerUrl;
-        public DocxConverter(string declaratorConversionServerUrl)
-        {
-            DeclaratorConversionServerUrl = declaratorConversionServerUrl;
-        }
+        private readonly string DeclaratorConversionServerUrl;
+        public DocxConverter(string declaratorConversionServerUrl) => this.DeclaratorConversionServerUrl = declaratorConversionServerUrl;
         private static string ToHex(byte[] bytes)
         {
-            StringBuilder result = new StringBuilder(bytes.Length * 2);
+            var result = new StringBuilder(bytes.Length * 2);
 
-            for (int i = 0; i < bytes.Length; i++)
+            for (var i = 0; i < bytes.Length; i++)
+            {
                 result.Append(bytes[i].ToString("x2"));
+            }
 
             return result.ToString();
         }
 
         public string DowloadFromConvertedStorage(string filename)
         {
-            using (SHA256 mySHA256 = SHA256.Create())
+            using var mySHA256 = SHA256.Create();
+            string hashValue;
+            using (var fileStream = File.Open(filename, FileMode.Open))
             {
-                string hashValue;
-                using (FileStream fileStream = File.Open(filename, FileMode.Open))
-                {
-                    hashValue = ToHex(mySHA256.ComputeHash(fileStream));
-                }
-                using (var client = new ConversionServerClient())
-                {
-                    string url = DeclaratorConversionServerUrl + "?sha256=" + hashValue;
-                    if (!url.StartsWith("http://"))
-                    {
-                        url = "http://" + url;
-                    }
-                    string docXPath = Path.GetTempFileName();
-                    Logger.Debug(String.Format("try to download docx from {0} to {1}", url, docXPath));
-
-                    try
-                    {
-                        client.DownloadFile(url, docXPath);
-                        Logger.Debug("WebClient.DownloadFile downloaded file successfully");
-                        Logger.Debug(String.Format("file {0}, size is {1}", docXPath, new System.IO.FileInfo(docXPath).Length));
-                    }
-                    catch (WebException exp)
-                    {
-                        if (exp.Status == WebExceptionStatus.Timeout)
-                        {
-                            Logger.Debug("Cannot get docx from conversion server in  5 minutes, retry");
-                            client.DownloadFile(url, docXPath);
-                        }
-                    }
-
-                    return docXPath;
-                }
-
+                hashValue = ToHex(mySHA256.ComputeHash(fileStream));
             }
+            using var client = new ConversionServerClient();
+            var url = this.DeclaratorConversionServerUrl + "?sha256=" + hashValue;
+            if (!url.StartsWith("http://"))
+            {
+                url = "http://" + url;
+            }
+            var docXPath = Path.GetTempFileName();
+            Logger.Debug(string.Format("try to download docx from {0} to {1}", url, docXPath));
+
+            try
+            {
+                client.DownloadFile(url, docXPath);
+                Logger.Debug("WebClient.DownloadFile downloaded file successfully");
+                Logger.Debug(string.Format("file {0}, size is {1}", docXPath, new System.IO.FileInfo(docXPath).Length));
+            }
+            catch (WebException exp)
+            {
+                if (exp.Status == WebExceptionStatus.Timeout)
+                {
+                    Logger.Debug("Cannot get docx from conversion server in  5 minutes, retry");
+                    client.DownloadFile(url, docXPath);
+                }
+            }
+
+            return docXPath;
         }
 
         public string ConvertFile2TempDocX(string filename)
         {
             if (filename.EndsWith("pdf"))
             {
-                if (DeclaratorConversionServerUrl != "")
+                if (this.DeclaratorConversionServerUrl != "")
                 {
                     try
                     {
-                        return DowloadFromConvertedStorage(filename);
+                        return this.DowloadFromConvertedStorage(filename);
                     }
                     catch (Exception exp)
                     {
                         var t = exp.GetType();
                         Logger.Debug("the file cannot be found in conversion server db, try to process this file in place");
                     }
-                } 
+                }
                 else
                 {
                     Logger.Error("no url for declarator conversion server specified!");
                 }
             }
-            string docXPath = filename + ".converted.docx";
+            var docXPath = filename + ".converted.docx";
             if (filename.EndsWith(".html") || filename.EndsWith(".htm"))
             {
-                return ConvertWithSoffice(filename);
+                return this.ConvertWithSoffice(filename);
             }
             var saveCulture = Thread.CurrentThread.CurrentCulture;
             // Aspose.Words cannot work well, see 7007_10.html in regression tests
-            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US"); 
+            Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             var doc = new Aspose.Words.Document(filename);
             doc.RemoveMacros();
             doc.Save(docXPath, Aspose.Words.SaveFormat.Docx);
@@ -180,26 +172,25 @@ namespace Smart.Parser.Adapters
             System.GC.Collect();
             System.GC.WaitForPendingFinalizers();
             return docXPath;
-
         }
-        public String ConvertWithSoffice(string fileName)
+        public string ConvertWithSoffice(string fileName)
         {
-            if (fileName.ToLower().EndsWith("pdf"))
+            if (fileName.EndsWith("pdf", StringComparison.OrdinalIgnoreCase))
             {
                 throw new SmartParserException("libre office cannot convert pdf");
             }
-            String outFileName = Path.ChangeExtension(fileName, "docx");
+            var outFileName = Path.ChangeExtension(fileName, "docx");
             if (File.Exists(outFileName))
             {
                 File.Delete(outFileName);
-            };
+            }
             var prg = @"C:\Program Files\LibreOffice\program\soffice.exe";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
                 prg = "/usr/bin/soffice";
             }
             var outdir = Path.GetDirectoryName(outFileName);
-            var args = String.Format(" --headless --writer   --convert-to \"docx:MS Word 2007 XML\"");
+            var args = string.Format(" --headless --writer   --convert-to \"docx:MS Word 2007 XML\"");
             if (outdir != "")
             {
                 args += " --outdir " + outdir;
@@ -211,15 +202,9 @@ namespace Smart.Parser.Adapters
             p.WaitForExit(3 * 60 * 1000); // 3 minutes
             try { p.Kill(true); } catch (InvalidOperationException) { }
             p.Dispose();
-            if (!File.Exists(outFileName))
-            {
-                throw new SmartParserException(String.Format("cannot convert  {0} with soffice", fileName));
-            }
-            return outFileName;
+            return !File.Exists(outFileName)
+                ? throw new SmartParserException(string.Format("cannot convert  {0} with soffice", fileName))
+                : outFileName;
         }
-
-
-
     }
-
 }

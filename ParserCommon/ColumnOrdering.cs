@@ -11,10 +11,7 @@ namespace TI.Declarator.ParserCommon
         public int EndColumn; //initialized in ColumnOrdering::FinishOrderingBuilding 
         public int ColumnPixelStart; //initialized in ColumnOrdering::FinishOrderingBuilding 
         public int ColumnPixelWidth;
-        public override string ToString()
-        {
-            return String.Format("[{0},{1})", BeginColumn,  EndColumn);
-        }
+        public override string ToString() => string.Format("[{0},{1})", this.BeginColumn, this.EndColumn);
     }
 
     public class ColumnOrdering
@@ -25,57 +22,44 @@ namespace TI.Declarator.ParserCommon
         public int? YearFromIncome = null;
         public static bool SearchForFioColumnOnly = false;
 
-        public bool ContainsField(DeclarationField field)
-        {
-            return ColumnOrder.ContainsKey(field);
-        }
+        public bool ContainsField(DeclarationField field) => this.ColumnOrder.ContainsKey(field);
 
         public void Add(TColumnInfo s)
         {
-            if (ColumnOrder.ContainsKey(s.Field))
+            if (this.ColumnOrder.ContainsKey(s.Field))
             {
                 return;
             }
-            ColumnOrder.Add(s.Field, s);
+            this.ColumnOrder.Add(s.Field, s);
         }
-        public void Delete(DeclarationField field)
-        {
-            ColumnOrder.Remove(field);
-        }
+        public void Delete(DeclarationField field) => this.ColumnOrder.Remove(field);
         public void FinishOrderingBuilding(int tableIndention)
         {
-            MergedColumnOrder.Clear();
-            foreach (var x in ColumnOrder.Values)
+            this.MergedColumnOrder.Clear();
+            foreach (var x in this.ColumnOrder.Values)
             {
-                MergedColumnOrder.Add(x);
+                this.MergedColumnOrder.Add(x);
             }
-            MergedColumnOrder.Sort((x, y) => x.BeginColumn.CompareTo(y.BeginColumn));
-            int sumwidth = tableIndention;
-            foreach (var x in MergedColumnOrder)
+            this.MergedColumnOrder.Sort((x, y) => x.BeginColumn.CompareTo(y.BeginColumn));
+            var sumwidth = tableIndention;
+            foreach (var x in this.MergedColumnOrder)
             {
                 x.ColumnPixelStart = sumwidth;
                 sumwidth += x.ColumnPixelWidth;
             }
         }
-        public static int PeriodIntersection(int start1, int end1, int start2, int end2)
-        {
-            if (start1 <= end2 && start2 <= end1) // overlap exists
-            {
-                return Math.Min(end1, end2) - Math.Max(start1, start2);
-            }
-            return 0;
-        }
+        public static int PeriodIntersection(int start1, int end1, int start2, int end2) => start1 <= end2 && start2 <= end1 ? Math.Min(end1, end2) - Math.Max(start1, start2) : 0;
         public DeclarationField FindByPixelIntersection(int start, int end, out int maxInterSize)
         {
-            DeclarationField field = DeclarationField.None;
+            var field = DeclarationField.None;
             maxInterSize = 0;
-            foreach (var x in ColumnOrder)
+            foreach (var x in this.ColumnOrder)
             {
-                int interSize = PeriodIntersection(start, end, x.Value.ColumnPixelStart, x.Value.ColumnPixelStart + x.Value.ColumnPixelWidth);
+                var interSize = PeriodIntersection(start, end, x.Value.ColumnPixelStart, x.Value.ColumnPixelStart + x.Value.ColumnPixelWidth);
                 if (interSize > maxInterSize)
                 {
                     maxInterSize = interSize;
-                    field = x.Key; 
+                    field = x.Key;
                 }
             }
             return field;
@@ -83,16 +67,10 @@ namespace TI.Declarator.ParserCommon
 
         public int GetMaxColumnEndIndex()
         {
-            Debug.Assert(MergedColumnOrder.Count > 0);
-            return MergedColumnOrder[MergedColumnOrder.Count - 1].EndColumn;
+            Debug.Assert(this.MergedColumnOrder.Count > 0);
+            return this.MergedColumnOrder[this.MergedColumnOrder.Count - 1].EndColumn;
         }
-        public bool OwnershipTypeInSeparateField
-        {
-            get
-            {
-                return ColumnOrder.ContainsKey(DeclarationField.OwnedRealEstateOwnershipType);
-            }
-        }
+        public bool OwnershipTypeInSeparateField => this.ColumnOrder.ContainsKey(DeclarationField.OwnedRealEstateOwnershipType);
         public int FirstDataRow { get; set; } = 1;
         public string Title { get; set; }
         public string MinistryName { get; set; }
@@ -100,14 +78,7 @@ namespace TI.Declarator.ParserCommon
         public int? Year { get; set; }
         public int? HeaderBegin { get; set; }
         public int? HeaderEnd { get; set; }
-        public int GetPossibleHeaderBegin()
-        {
-            return HeaderBegin ?? 0;
-        }
-        public int GetPossibleHeaderEnd()
-        {
-            return HeaderEnd ?? GetPossibleHeaderBegin() + 2;
-        }
-
+        public int GetPossibleHeaderBegin() => this.HeaderBegin ?? 0;
+        public int GetPossibleHeaderEnd() => this.HeaderEnd ?? this.GetPossibleHeaderBegin() + 2;
     }
 }

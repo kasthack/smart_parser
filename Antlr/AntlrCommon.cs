@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using SmartAntlr;
 using System.IO;
 using Antlr4.Runtime;
 using System;
@@ -10,28 +9,26 @@ using Antlr4.Runtime.Tree;
 
 public class GeneralParserPhrase
 {
-    string TextFromLexer = "";
-    string SourceText = "";
-        
+    private readonly string TextFromLexer = "";
+    private readonly string SourceText = "";
+
     public GeneralParserPhrase(GeneralAntlrParserWrapper parser, ParserRuleContext context)
     {
-        SourceText = parser.GetSourceTextByParserContext(context);
-        TextFromLexer = context.GetText();
+        this.SourceText = parser.GetSourceTextByParserContext(context);
+        this.TextFromLexer = context.GetText();
     }
 
     virtual public string GetJsonString()
     {
         var my_jsondata = new Dictionary<string, string>
             {
-                { "value", TextFromLexer}
+                { "value", this.TextFromLexer}
             };
         return JsonConvert.SerializeObject(my_jsondata, Formatting.Indented);
     }
 
-
-    public string GetText() { return TextFromLexer; }
-    public string GetSourceText() { return SourceText; }
-
+    public string GetText() => this.TextFromLexer;
+    public string GetSourceText() => this.SourceText;
 }
 
 public class RealtyFromText : GeneralParserPhrase
@@ -42,28 +39,25 @@ public class RealtyFromText : GeneralParserPhrase
     public string RealtyShare = "";
     public string Country = "";
 
-    public bool IsEmpty()
-    {
-        return Square == -1 && OwnType.Length == 0 && RealtyType.Length == 0 && RealtyShare.Length == 0 &&
-            Country.Length == 0;
-    }
+    public bool IsEmpty() => this.Square == -1 && this.OwnType.Length == 0 && this.RealtyType.Length == 0 && this.RealtyShare.Length == 0 &&
+            this.Country.Length == 0;
 
-    public RealtyFromText(GeneralAntlrParserWrapper parser, ParserRuleContext context) : base(parser, context) 
-    { 
+    public RealtyFromText(GeneralAntlrParserWrapper parser, ParserRuleContext context) : base(parser, context)
+    {
     }
 
     public void InitializeSquare(string strVal, bool hectare)
     {
         if (strVal != "")
         {
-            Square = strVal.ParseDecimalValue();
+            this.Square = strVal.ParseDecimalValue();
             if (hectare)
             {
-                Square = Square * 10000;
+                this.Square *= 10000;
             }
-            if (Square == 0)
+            if (this.Square == 0)
             {
-                Square = -1;
+                this.Square = -1;
             }
         }
     }
@@ -71,17 +65,17 @@ public class RealtyFromText : GeneralParserPhrase
     {
         var my_jsondata = new Dictionary<string, string>
             {
-                { "OwnType", OwnType},
-                { "RealtyType",  RealtyType},
-                { "Square", Square.ToString()}
+                { "OwnType", this.OwnType},
+                { "RealtyType",  this.RealtyType},
+                { "Square", this.Square.ToString()}
             };
-        if (RealtyShare != "")
+        if (this.RealtyShare != "")
         {
-            my_jsondata["RealtyShare"] = RealtyShare;
+            my_jsondata["RealtyShare"] = this.RealtyShare;
         }
-        if (Country != "")
+        if (this.Country != "")
         {
-            my_jsondata["Country"] = Country;
+            my_jsondata["Country"] = this.Country;
         }
         return JsonConvert.SerializeObject(my_jsondata, Formatting.Indented);
     }
@@ -98,29 +92,25 @@ public abstract class GeneralAntlrParserWrapper
     {
         if (!silent)
         {
-            BeVerbose();
+            this.BeVerbose();
         }
     }
     public void BeVerbose()
     {
-        Output = Console.Out;
-        ErrorOutput = Console.Error;
+        this.Output = Console.Out;
+        this.ErrorOutput = Console.Error;
     }
 
-    public virtual Lexer CreateLexer(AntlrInputStream inputStream)
-    {
-        return new StrictLexer(inputStream, Output, ErrorOutput);
-    }
+    public virtual Lexer CreateLexer(AntlrInputStream inputStream) => new StrictLexer(inputStream, this.Output, this.ErrorOutput);
 
     public void InitLexer(string inputText)
     {
         inputText = Regex.Replace(inputText, @"\s+", " ");
         inputText = inputText.Trim();
-        InputTextCaseSensitive = inputText;
-        AntlrInputStream inputStream = new AntlrInputStream(InputTextCaseSensitive.ToLower());
-        var lexer = CreateLexer(inputStream);
-        CommonTokenStream = new CommonTokenStream(lexer);
-        
+        this.InputTextCaseSensitive = inputText;
+        var inputStream = new AntlrInputStream(this.InputTextCaseSensitive.ToLower());
+        var lexer = this.CreateLexer(inputStream);
+        this.CommonTokenStream = new CommonTokenStream(lexer);
     }
     public abstract List<GeneralParserPhrase> Parse(string inputText);
 
@@ -129,7 +119,7 @@ public abstract class GeneralAntlrParserWrapper
         var result = new List<string>();
         if (inputText != null)
         {
-            foreach (var i in Parse(inputText))
+            foreach (var i in this.Parse(inputText))
             {
                 result.Add(i.GetJsonString());
             }
@@ -142,7 +132,7 @@ public abstract class GeneralAntlrParserWrapper
         var result = new List<string>();
         if (inputText != null)
         {
-            foreach (var item in Parse(inputText))
+            foreach (var item in this.Parse(inputText))
             {
                 if (item.GetText() != "")
                 {
@@ -151,49 +141,39 @@ public abstract class GeneralAntlrParserWrapper
             }
         }
         return result;
-
     }
 
     public string GetSourceTextByParserContext(ParserRuleContext context)
     {
-        int start = context.Start.StartIndex;
-        int end = InputTextCaseSensitive.Length;
+        var start = context.Start.StartIndex;
+        var end = this.InputTextCaseSensitive.Length;
         if (context.Stop != null)
         {
             end = context.Stop.StopIndex + 1;
         }
-        if (end > start)
-        {
-            return InputTextCaseSensitive.Substring(start, end - start);
-        }
-        else
-        {
-            return context.GetText();
-        }
+        return end > start ? this.InputTextCaseSensitive[start..end] : context.GetText();
     }
     public string GetSourceTextByTerminalNode(ITerminalNode node)
     {
-        int start = node.Symbol.StartIndex;
-        int end = node.Symbol.StopIndex + 1;
-        return InputTextCaseSensitive.Substring(start, end - start);
+        var start = node.Symbol.StartIndex;
+        var end = node.Symbol.StopIndex + 1;
+        return this.InputTextCaseSensitive[start..end];
     }
-
 }
 
 public class AntlrCommon
 {
-
     public static List<string> ReadTestCases(string inputPath)
     {
         var lines = new List<string>();
-        foreach (string line in File.ReadLines(inputPath))
+        foreach (var line in File.ReadLines(inputPath))
         {
             lines.Add(line + "\n");
         }
-        string text = "";
+        var text = "";
         var texts = new List<string>();
 
-        for (int i = 0; i < lines.Count; ++i)
+        for (var i = 0; i < lines.Count; ++i)
         {
             var line = lines[i];
             text += line;
@@ -209,23 +189,21 @@ public class AntlrCommon
             }
         }
         return texts;
-
     }
     public static void WriteTestCaseResultsToFile(GeneralAntlrParserWrapper parser, List<string> texts, string outputPath)
     {
-        using (StreamWriter outputFile = new StreamWriter(outputPath))
+        using var outputFile = new StreamWriter(outputPath)
         {
-            outputFile.NewLine = "\n";
-            foreach (string text in texts)
+            NewLine = "\n"
+        };
+        foreach (var text in texts)
+        {
+            outputFile.WriteLine(text);
+            foreach (var realtyStr in parser.ParseToJson(text))
             {
-                outputFile.WriteLine(text);
-                foreach (var realtyStr in parser.ParseToJson(text))
-                {
-                    outputFile.WriteLine(realtyStr.Replace("\r", String.Empty));
-                }
-                outputFile.WriteLine("");
+                outputFile.WriteLine(realtyStr.Replace("\r", string.Empty));
             }
+            outputFile.WriteLine("");
         }
     }
-
 }

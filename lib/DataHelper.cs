@@ -54,6 +54,34 @@ namespace Smart.Parser.Lib
 
         public static bool IsRelativeInfo(string relationshipStr) => ParseRelationType(relationshipStr, false) != RelationType.Error;
 
+        private static readonly ISet<string> RelationSpouseStrings = new HashSet<string>()
+        {
+            "жена", "жены",
+            "муж",
+            "подопечный",
+            "спруг", "спруга", "суапруга", "супргуа", "супргуга", "супруа", "супруг", "супруг(а)", "супруг(супруга)", "супруга",
+            "супруга(супруг)", "супруги", "супругнет", "супруна", "супуг", "супуга", "сурпуга", "суруга", "упруга",
+        };
+
+        private static readonly ISet<string> RelationChildStrings = new HashSet<string>()
+        {
+            "дочери", "дочь", "дочьжены", "дочьсупроги", "дочьсупруги", "дрчь",
+            "иждивенец", "иждивенц",
+            "н/ребенок", "несовершенно", "несовершеннолетийребенок", "несовершеннолетниедети", "несовершеннолетниеребенок",
+            "несовершеннолетний", "несовершеннолетнийребенок", "несовершеннолетнийребенок(дочь)", "несовершеннолетнийребенок(сын)",
+            "несовершеннолетнийребенокнет", "несовершеннолетнийребёнок", "несовершеннолетнийсын", "несовершеннолетняядочь", "несовершеннолребенок",
+            "несовершеноленийребенок", "несовершенолетнийребенок", "несоверщеннолетнийребенок", "несовешеннолетнийребенок", "нсовершеннолетнийребенок",
+            "опекаемая", "опекаемый",
+            "падчерица", "пасынок",
+            "ребенок", "ребёнок", "совершеннолетнийребенок",
+            "сын", "сына", "сынжены", "сынжены(находитсянаиждивении)", "сынсупруги",
+        };
+
+        private static readonly ISet<string> RelationOtherStrings = new HashSet<string>()
+        {
+            "племяницасупруги", "мать", "членсемьи",
+        };
+
         public static RelationType ParseRelationType(string strRel, bool throwException = true)
         {
             var clean = strRel.ToLower()
@@ -63,119 +91,30 @@ namespace Smart.Parser.Lib
                 .Replace("\n", string.Empty)
                 .Replace("ё", "е")
                 .Replace(".", string.Empty).Trim().RemoveStupidTranslit().ToLower();
-            switch (clean)
+
+            return clean switch
             {
-                case "супруг": return RelationType.Spouse;
-                case "упруга": return RelationType.Spouse;
-                case "супуг": return RelationType.Spouse;
-                case "супруг(супруга)": return RelationType.Spouse;
-                case "супруга(супруг)": return RelationType.Spouse;
-                case "суруга": return RelationType.Spouse;
-                case "спруга": return RelationType.Spouse;
-                case "супруа": return RelationType.Spouse;
-                case "супуга": return RelationType.Spouse;
-                case "супруга": return RelationType.Spouse;
-                case "супруг(а)": return RelationType.Spouse;
-                case "супругнет": return RelationType.Spouse;
-                case "муж": return RelationType.Spouse;
-                case "жена": return RelationType.Spouse;
-                case "жены": return RelationType.Spouse;
-                case "подопечный": return RelationType.Spouse;
-                case "супруги": return RelationType.Spouse;
-                case "суапруга": return RelationType.Spouse;
-                case "сурпуга": return RelationType.Spouse;
-                case "спруг": return RelationType.Spouse;
-                case "супргуа": return RelationType.Spouse;
-                case "супруна": return RelationType.Spouse;
-                case "супргуга": return RelationType.Spouse;
-
-                case "несовершенно": return RelationType.Child;
-                case "несовершеннолетняядочь": return RelationType.Child;
-                case "несовершеннолетнийсын": return RelationType.Child;
-                case "несовершеннолетниедети": return RelationType.Child;
-                case "несовершеннолетнийребенок": return RelationType.Child;
-                case "несовершеннолетнийребенокнет": return RelationType.Child;
-                case "несовершенолетнийребенок": return RelationType.Child;
-                case "несовершеннолетнийребенок(дочь)": return RelationType.Child;
-                case "несовершеннолетнийребенок(сын)": return RelationType.Child;
-                case "несовершеннолетниеребенок": return RelationType.Child;
-                case "несовершеннолребенок": return RelationType.Child;
-                case "н/ребенок": return RelationType.Child;
-                case "дочь": return RelationType.Child;
-                case "дрчь": return RelationType.Child;
-                case "дочери": return RelationType.Child;
-                case "дочьсупроги": return RelationType.Child;
-                case "дочьсупруги": return RelationType.Child;
-                case "сынсупруги": return RelationType.Child;
-                case "сын": return RelationType.Child;
-                case "сына": return RelationType.Child;
-                case "сынжены(находитсянаиждивении)": return RelationType.Child;
-                case "пасынок": return RelationType.Child;
-                case "падчерица": return RelationType.Child;
-                case "сынжены": return RelationType.Child;
-                case "дочьжены": return RelationType.Child;
-                case "несовершеннолетнийребёнок": return RelationType.Child;
-                case "несовешеннолетнийребенок": return RelationType.Child;
-                case "несовершеннолетийребенок": return RelationType.Child;
-                case "несовершеннолетний": return RelationType.Child;
-                case "несовершеноленийребенок": return RelationType.Child;
-                case "нсовершеннолетнийребенок": return RelationType.Child;
-                case "совершеннолетнийребенок": return RelationType.Child;
-                case "несоверщеннолетнийребенок": return RelationType.Child;
-                case "ребёнок": return RelationType.Child;
-                case "ребенок": return RelationType.Child;
-                case "иждивенец": return RelationType.Child;
-                case "опекаемая": return RelationType.Child;
-                case "опекаемый": return RelationType.Child;
-                case "иждивенц": return RelationType.Child;
-
-                case "племяницасупруги": return RelationType.Other;
-                case "мать": return RelationType.Other;
-                case "членсемьи": return RelationType.Other;
-
-                default:
-                    if (clean.StartsWith("ребенок") || clean.StartsWith("ребёнок") || clean.StartsWith("сын") || clean.StartsWith("дочь") || clean.StartsWith("несовершеннол"))
-                    {
-                        return RelationType.Child;
-                    }
-
-                    if (clean.StartsWith("супруг"))
-                    {
-                        return RelationType.Spouse;
-                    }
-
-                    if (throwException)
-                    {
-                        throw new ArgumentOutOfRangeException(strRel, $"Неизвестный тип родственника: {strRel}");
-                    }
-
-                    return RelationType.Error;
-            }
+                _ when RelationSpouseStrings.Contains(clean) || clean.StartsWith("супруг") => RelationType.Spouse,
+                _ when RelationChildStrings.Contains(clean) || clean.StartsWithAny("ребенок", "ребёнок", "сын", "дочь", "несовершеннол") => RelationType.Child,
+                _ when RelationOtherStrings.Contains(clean) => RelationType.Other,
+                _ => throwException ? throw new ArgumentOutOfRangeException(strRel, $"Неизвестный тип родственника: {strRel}") : RelationType.Error,
+            };
         }
+
+        private static readonly ISet<string> EmptyStrings = new HashSet<string>()
+        {
+            "- - -", "-", "?", "_", "не имеет", "не работает", "не указан", "не указано", "нет", "отсутствует", "–", "—", "─",
+        };
 
         public static bool IsEmptyValue(string s)
         {
-            if (s == null)
+            if (string.IsNullOrWhiteSpace(s))
             {
                 return true;
             }
 
-            s = s.Trim().ToLower();
-            return Regex.Match(s, @"^[\s-_]+$").Success
-                || string.IsNullOrWhiteSpace(s)
-                || s == "-"
-                || s == "─"
-                || s == "?"
-                || s == "- - -"
-                || s == "–"
-                || s == "_"
-                || s == "—"
-                || s == "нет"
-                || s == "не имеет"
-                || s == "не указан"
-                || s == "не указано"
-                || s == "не работает"
-                || s == "отсутствует";
+            s = s.Trim().ToLowerInvariant();
+            return Regex.Match(s, @"^[\s-_]+$").Success || EmptyStrings.Contains(s);
         }
 
         private static decimal ParseRoubles(string val, bool inThousands)

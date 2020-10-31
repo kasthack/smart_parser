@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Globalization;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace TI.Declarator.ParserCommon
@@ -12,7 +13,7 @@ namespace TI.Declarator.ParserCommon
         {
             var processedVal = Regex.Replace(val, @"\s+", string.Empty);
             return !decimal.TryParse(processedVal, NumberStyles.Any, RussianCulture, out var res) && !decimal.TryParse(processedVal, NumberStyles.Any, CultureInfo.InvariantCulture, out res)
-                ? throw new Exception("can't parse value '" + processedVal + "' as decimal")
+                ? throw new Exception($"can't parse value '{processedVal}' as decimal")
                 : res;
         }
 
@@ -77,46 +78,26 @@ namespace TI.Declarator.ParserCommon
                 return false;
             }
 
-            return !char.IsUpper(s[0])
-                ? false
-                : s.EndsWith("вич") ||
-                   s.EndsWith("вна") ||
-                   s.EndsWith("вной") ||
-                   s.EndsWith("внва") ||
-                   s.EndsWith("вны") ||
-                   (s.Length <= 4 && s.EndsWith(".")) || // "В." "В.П." "Вяч."
-                   s.EndsWith("тич") ||
-                   s.EndsWith("мич") ||
-                   s.EndsWith("ьич") ||
-                   s.EndsWith("ьича") ||
-                   s.EndsWith("ьича") ||
-                   s.EndsWith("вича") ||
-                   s.EndsWith("тича") ||
-                   s.EndsWith("мича") ||
-                   s.EndsWith("чны") ||
-                   s.EndsWith("чна") ||
-                   s.EndsWith("ьичем") ||
-                   s.EndsWith("тичем") ||
-                   s.EndsWith("мичем") ||
-                   s.EndsWith("вичем") ||
-                   s.EndsWith("чной") ||
-                   s.EndsWith("вной");
+            return char.IsUpper(s[0])
+                && (
+                    s.EndsWithAny("вич", "вна", "вной", "внва", "вны", "тич", "мич", "ьич", "ьича", "ьича", "вича", "тича", "мича", "чны", "чна", "ьичем", "тичем", "мичем", "вичем", "чной", "вной")
+                   ||
+                   (s.Length <= 4 && s.EndsWith(".")) // в., в.п., вяч.
+                );
         }
 
         public static bool MayContainsRole(string s)
         {
             s = s.OnlyRussianLowercase();
-            return s.Length == 0
-                ? false
-                : s.Contains("заместител") ||
-                   s.Contains("начальник") ||
-                   s.Contains("аудитор") ||
-                   s.Contains("депутат") ||
-                   s.Contains("секретарь") ||
-                   s.Contains("уполномоченный") ||
-                   s.Contains("председатель") ||
-                   s.Contains("бухгалтер") ||
-                   s.Contains("руководител");
+            return s.Length != 0 && s.ContainsAny("заместител", "начальник", "аудитор", "депутат", "секретарь", "уполномоченный", "председатель", "бухгалтер", "руководител");
         }
+
+        public static bool EndsWithAny(this string source, params string[] patterns) => patterns.Any(pattern => source.EndsWith(pattern, StringComparison.OrdinalIgnoreCase));
+
+        public static bool StartsWithAny(this string source, params string[] patterns) => patterns.Any(pattern => source.StartsWith(pattern, StringComparison.OrdinalIgnoreCase));
+
+        public static bool ContainsAny(this string source, params string[] patterns) => patterns.Any(pattern => source.Contains(pattern, StringComparison.OrdinalIgnoreCase));
+
+        public static bool ContainsAll(this string source, params string[] patterns) => patterns.All(pattern => source.Contains(pattern, StringComparison.OrdinalIgnoreCase));
     }
 }

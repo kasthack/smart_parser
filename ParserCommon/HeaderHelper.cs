@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Text.RegularExpressions;
 using static TI.Declarator.ParserCommon.DeclarationField;
 
@@ -95,16 +94,14 @@ namespace TI.Declarator.ParserCommon
             _ when str.IsSecuritiesField() => Securities,
             _ when str.IsStocksField() => Stocks,
 
-            _ when HasSquareString(str) => MixedRealEstateSquare,
-            _ when HasCountryString(str) => MixedRealEstateCountry,
+            _ when str.HasSquareString() => MixedRealEstateSquare,
+            _ when str.HasCountryString() => MixedRealEstateCountry,
 
             _ => None,
         };
 
         private static string NormalizeString(string str) =>
-            string.Join(
-                " ",
-                str.ToLower() .Split(new char[] { ' ', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries))
+            string.Join(" ", str.ToLower().Split(new char[] { ' ', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries))
             .RemoveStupidTranslit();
 
         public static bool IsNumber(this string str)

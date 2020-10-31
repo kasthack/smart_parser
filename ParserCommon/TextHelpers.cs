@@ -70,26 +70,25 @@ namespace TI.Declarator.ParserCommon
 
         public static bool CanBeInitials(string s) => Regex.Match(s.Trim(), @"\w\.\w\.").Success;
 
+        private static readonly string[] PatronymicSuffixStrings = { "вич", "вна", "вной", "внва", "вны", "тич", "мич", "ьич", "ьича", "ьича", "вича", "тича", "мича", "чны", "чна", "ьичем", "тичем", "мичем", "вичем", "чной", "вной" };
+
         public static bool CanBePatronymic(string s)
         {
             s = s.Replace("-", string.Empty);
-            if (s.Length == 0)
+            if (s.IsNullOrWhiteSpace())
             {
                 return false;
             }
 
-            return char.IsUpper(s[0])
-                && (
-                    s.EndsWithAny("вич", "вна", "вной", "внва", "вны", "тич", "мич", "ьич", "ьича", "ьича", "вича", "тича", "мича", "чны", "чна", "ьичем", "тичем", "мичем", "вичем", "чной", "вной")
-                   ||
-                   (s.Length <= 4 && s.EndsWith(".")) // в., в.п., вяч.
-                );
+            return char.IsUpper(s[0]) && (s.EndsWithAny(PatronymicSuffixStrings) || (s.Length <= 4 && s.EndsWith("."))) /* в., в.п., вяч. */;
         }
+
+        private static readonly string[] RoleStrings = { "заместител", "начальник", "аудитор", "депутат", "секретарь", "уполномоченный", "председатель", "бухгалтер", "руководител" };
 
         public static bool MayContainsRole(string s)
         {
             s = s.OnlyRussianLowercase();
-            return s.Length != 0 && s.ContainsAny("заместител", "начальник", "аудитор", "депутат", "секретарь", "уполномоченный", "председатель", "бухгалтер", "руководител");
+            return !s.IsNullOrWhiteSpace() && s.ContainsAny(RoleStrings);
         }
 
         public static bool EndsWithAny(this string source, params string[] patterns) => patterns.Any(pattern => source.EndsWith(pattern, StringComparison.OrdinalIgnoreCase));

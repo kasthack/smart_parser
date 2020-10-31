@@ -621,15 +621,14 @@ public partial class Common : Parser {
 		return _localctx;
 	}
 
-	public override bool Sempred(RuleContext _localctx, int ruleIndex, int predIndex) {
-		switch (ruleIndex) {
-		case 0: return realty_id_sempred((Realty_idContext)_localctx, predIndex);
-		case 1: return square_value_without_spaces_sempred((Square_value_without_spacesContext)_localctx, predIndex);
-		case 2: return square_value_with_spaces_sempred((Square_value_with_spacesContext)_localctx, predIndex);
-		}
-		return true;
-	}
-	private bool realty_id_sempred(Realty_idContext _localctx, int predIndex) {
+    public override bool Sempred(RuleContext _localctx, int ruleIndex, int predIndex) => ruleIndex switch
+    {
+        0 => realty_id_sempred((Realty_idContext)_localctx, predIndex),
+        1 => square_value_without_spaces_sempred((Square_value_without_spacesContext)_localctx, predIndex),
+        2 => square_value_with_spaces_sempred((Square_value_with_spacesContext)_localctx, predIndex),
+        _ => true,
+    };
+    private bool realty_id_sempred(Realty_idContext _localctx, int predIndex) {
 		switch (predIndex) {
 		case 0: return (_localctx._INT!=null?int.Parse(_localctx._INT.Text):0) > 6000000;
 		}

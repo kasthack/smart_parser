@@ -140,22 +140,13 @@ namespace Smart.Parser
             var verboseLevel = Logger.LogLevel.Info;
             if (verboseOpt.isMatched)
             {
-                switch (verboseOpt.Value.ToString())
+                verboseLevel = verboseOpt.Value.ToString() switch
                 {
-                    case "info":
-                        verboseLevel = Logger.LogLevel.Info;
-                        break;
-                    case "error":
-                        verboseLevel = Logger.LogLevel.Error;
-                        break;
-                    case "debug":
-                        verboseLevel = Logger.LogLevel.Debug;
-                        break;
-                    default:
-                        {
-                            throw new Exception("unknown verbose level " + verboseOpt.Value.ToString());
-                        }
-                }
+                    "info" => Logger.LogLevel.Info,
+                    "error" => Logger.LogLevel.Error,
+                    "debug" => Logger.LogLevel.Debug;
+                    _ => throw new Exception("unknown verbose level " + verboseOpt.Value.ToString()),
+                };
             }
 
             Logger.SetLoggingLevel(verboseLevel);

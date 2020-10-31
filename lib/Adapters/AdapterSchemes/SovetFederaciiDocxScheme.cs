@@ -82,14 +82,12 @@ namespace Smart.Parser.Lib.Adapters.AdapterSchemes
                     this.ProcessIncomeTable(table, currentDeclarant);
                     lastTableProcessor = "Income";
                 }
-                else if (rowText.Contains("ппвидимущества") &&
-                         rowText.Contains("собственникимущества"))
+                else if (rowText.ContainsAny("ппвидимущества", "собственникимущества"))
                 {
                     this.ParseRealEstateTable(table, currentDeclarant, RealtyParser.OwnedString);
                     lastTableProcessor = "RealEstateOwned";
                 }
-                else if (rowText.Contains("ппвидимущества") &&
-                         rowText.Contains("находитсявпользовании"))
+                else if (rowText.ContainsAny("ппвидимущества", "находитсявпользовании"))
                 {
                     this.ParseRealEstateTable(table, currentDeclarant, RealtyParser.StateString);
                     lastTableProcessor = "RealEstateState";

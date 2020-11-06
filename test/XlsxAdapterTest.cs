@@ -18,8 +18,7 @@ namespace test
             var columnOrdering = ColumnDetector.ExamineTableBeginning(adapter);
             Smart.Parser.Lib.Parser parser = new Smart.Parser.Lib.Parser(adapter);
             Declaration declaration = parser.Parse(columnOrdering, false, null);
-            string comments = "";
-            string output = DeclarationSerializer.Serialize(declaration, ref comments);
+            string output = DeclarationSerializer.Serialize(declaration, out _);
         }
         
     }

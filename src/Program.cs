@@ -506,8 +506,7 @@
 
         private static string DumpDeclarationsToJson(string inputFile, Declaration declaration)
         {
-            string schema_errors = null;
-            var output = DeclarationSerializer.Serialize(declaration, ref schema_errors);
+            var output = DeclarationSerializer.Serialize(declaration, out var schema_errors);
 
             if (!string.IsNullOrEmpty(schema_errors))
             {

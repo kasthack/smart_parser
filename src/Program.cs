@@ -21,56 +21,9 @@
     using TI.Declarator.JsonSerialization;
     using TI.Declarator.ParserCommon;
 
-    public static class Program
+    public static partial class Program
     {
         public static Options CurrentOptions { get; private set; } = new Options();
-
-        public class Options
-        {
-            public string OutputFile { get; set; }
-
-            public string License { get; set; }
-
-            public string Log { get; set; }
-
-            public bool SkipLogging { get; set; }
-
-            public Logger.LogLevel Verbose { get; set; }
-
-            public bool Columnsonly { get; set; }
-
-            public bool Checkjson { get; set; }
-
-            public AdapterFamily Adapter { get; set; } = AdapterFamily.Prod;
-
-            public int MaxRows { get; set; } = -1;
-
-            public DeclarationField DumpColumn { get; set; } = DeclarationField.None;
-
-            public string DumpHtml { get; set; }
-
-            public string Toloka { get; set; }
-
-            public bool SkipRelativeOrphan { get; set; }
-
-            public bool ApiValidation { get; set; }
-
-            public bool BuildTrigrams { get; set; }
-
-            public bool CheckPredictor { get; set; }
-
-            public int? DocfileId { get; set; }
-
-            public string ConvertedStorageUrl { get; set; }
-
-            public bool FioOnly { get; set; }
-
-            public bool DecimalRawNormalization { get; set; }
-
-            public bool Disclosures { get; set; }
-
-            public string InputFile { get; set; }
-        }
 
         public static string BuildOutFileNameByInput(string inputFile) => Path.Combine(Path.GetDirectoryName(inputFile), $"{Path.GetFileName(inputFile)}.json");
 
@@ -84,18 +37,19 @@
                 var fileName = fileMask[1..];
                 Logger.Info($"Reading files list from {fileName}");
 
-                files = File.ReadAllLines(fileName).ToArray();
+                files = File.ReadAllLines(fileName);
             }
             else
             {
                 Logger.Info($"Parsing files by mask {fileMask}");
 
                 files = Directory.GetFiles(
-                    Path.GetDirectoryName(fileMask), Path.GetFileName(fileMask),
+                    Path.GetDirectoryName(fileMask),
+                    Path.GetFileName(fileMask),
                     SearchOption.AllDirectories);
             }
 
-            Logger.Info("Found {0} files", files.Length);
+            Logger.Info($"Found {files.Length} files");
 
             return ParseMultipleFiles(files, Path.GetDirectoryName(fileMask));
         }
@@ -108,12 +62,15 @@
             foreach (var file in files)
             {
                 Logger.Info($"Parsing file {file}");
+                var errors = Logger.Errors;
                 try
                 {
                     Logger.SetOutSecond();
                     ParseFile(file, BuildOutFileNameByInput(file));
-                    var hasErrors = Logger.Errors.Count > 0;
+
+                    var hasErrors = errors.Count > 0;
                     Logger.Info($"Result: {(hasErrors ? "error" : "OK")}");
+
                     parse_results[hasErrors ? "error" : "ok"].Add(file);
                 }
                 catch (Exception e)
@@ -132,25 +89,23 @@
                     Logger.SetOutMain();
                 }
 
-                if (Logger.Errors.Count > 0)
+                if (errors.Count > 0)
                 {
-                    Logger.Info($" Parsing errors ({Logger.Errors.Count})");
+                    Logger.Info($" Parsing errors ({errors.Count})");
 
-                    foreach (var e in Logger.Errors)
+                    foreach (var e in errors)
                     {
                         Logger.Info(e);
                     }
-
-                    Logger.Errors.Clear();
                 }
             }
 
             Logger.Info("Parsing Results:");
 
-            foreach (var key_value in parse_results)
+            foreach (var (key, value) in parse_results)
             {
-                Logger.Info($"Result: {key_value.Key} ({key_value.Value.Count})");
-                foreach (var file in key_value.Value)
+                Logger.Info($"Result: {key} ({value.Count})");
+                foreach (var file in value)
                 {
                     Logger.Info(file);
                 }
@@ -158,11 +113,13 @@
 
             if (Logger.UnknownRealEstate.Count > 0)
             {
-                Logger.Info("UnknownRealEstate.Count: {0}", Logger.UnknownRealEstate.Count);
+                Logger.Info($"UnknownRealEstate.Count: {Logger.UnknownRealEstate.Count}");
+
                 var content = string.Join("\n", Logger.UnknownRealEstate);
                 var dictfile = Path.Combine(outputDir, "UnknownRealEstate.txt");
                 File.WriteAllText(dictfile, content);
-                Logger.Info("Output UnknownRealEstate to file {0}", dictfile);
+
+                Logger.Info($"Output UnknownRealEstate to file {dictfile}");
             }
 
             if (ColumnPredictor.CalcPrecision)
@@ -188,20 +145,23 @@
                 return;
             }
 
-            var fileID = BuildInputFileId(adapter, inputFileName);
             using (var file = new StreamWriter(CurrentOptions.Toloka))
             {
                 file.WriteLine("INPUT:input_id\tINPUT:input_json\tGOLDEN:declaration_json\tHINT:text");
+
                 var random = new Random();
                 var dataRowsCount = Math.Min(20, adapter.GetRowsCount() - columnOrdering.GetPossibleHeaderEnd());
                 var dataStart = random.Next(columnOrdering.GetPossibleHeaderEnd(), adapter.GetRowsCount() - dataRowsCount);
                 var dataEnd = dataStart + dataRowsCount;
+
                 var json = adapter.TablePortionToJson(columnOrdering, dataStart, dataEnd);
                 json.InputFileName = inputFileName;
                 json.Title = declaration.Properties.SheetTitle;
+
                 var jsonStr = JsonConvert.SerializeObject(json);
                 jsonStr = jsonStr.Replace("\t", " ").Replace("\\t", " ").Replace("\"", "\"\"");
-                var id = $"{fileID}_{dataStart}_{dataEnd}";
+
+                var id = $"{BuildInputFileId(adapter, inputFileName)}_{dataStart}_{dataEnd}";
                 file.WriteLine($"{id}\t\"{jsonStr}\"\t\t");
             }
         }
@@ -283,11 +243,11 @@
                     {
                         Logger.Info($"Skipping empty sheet {sheetIndex} (No headers found exception thrown)");
                     }
+                }
 
-                    if (allDeclarations != null)
-                    {
-                        WriteOutputJson(inputFile, allDeclarations, outFile);
-                    }
+                if (allDeclarations != null)
+                {
+                    WriteOutputJson(inputFile, allDeclarations, outFile);
                 }
             }
             else
@@ -409,11 +369,12 @@
                 Logger.Info(ColumnPredictor.GetPrecisionStr());
             }
 
-            if (Logger.Errors.Count > 0)
+            var errors = Logger.Errors;
+            if (errors.Count > 0)
             {
-                Logger.Info("*** Errors ({0}):", Logger.Errors.Count);
+                Logger.Info("*** Errors ({0}):", errors.Count);
 
-                foreach (var e in Logger.Errors)
+                foreach (var e in errors)
                 {
                     Logger.Info(e);
                 }
@@ -425,7 +386,6 @@
         private static Declaration BuildDeclarations(IAdapter adapter, string inputFile)
         {
             Declaration declaration;
-            var inputFileName = Path.GetFileName(inputFile);
             var parser = new Lib.Parser(adapter, !CurrentOptions.SkipRelativeOrphan);
 
             if (adapter.CurrentScheme == default)
@@ -435,15 +395,10 @@
                 // Try to extract declaration year from file name if we weren't able to get it from document title
                 if (!columnOrdering.Year.HasValue)
                 {
-                    columnOrdering.Year = TextHelpers.ExtractYear(inputFileName);
+                    columnOrdering.Year = TextHelpers.ExtractYear(Path.GetFileName(inputFile));
                 }
 
-                Logger.Info("Column ordering: ");
-                foreach (var ordering in columnOrdering.ColumnOrder)
-                {
-                    Logger.Info(ordering.ToString());
-                }
-
+                Logger.Info($"Column ordering: \n{string.Join("\n", columnOrdering.ColumnOrder)}");
                 Logger.Info($"OwnershipTypeInSeparateField: {columnOrdering.OwnershipTypeInSeparateField}");
 
                 if (CurrentOptions.Columnsonly)
@@ -481,10 +436,14 @@
                     return null;
                 }
 
-                if (!(columnOrdering.ContainsField(DeclarationField.DeclarantIncome) ||
-                      columnOrdering.ContainsField(DeclarationField.DeclarantIncomeInThousands) ||
-                      columnOrdering.ContainsField(DeclarationField.DeclaredYearlyIncome) ||
-                      columnOrdering.ContainsField(DeclarationField.DeclaredYearlyIncomeThousands)))
+                if (!new[]
+                    {
+                        DeclarationField.DeclarantIncome,
+                        DeclarationField.DeclarantIncomeInThousands,
+                        DeclarationField.DeclaredYearlyIncome,
+                        DeclarationField.DeclaredYearlyIncomeThousands,
+                    }
+                    .Any(columnOrdering.ContainsField))
                 {
                     if (!ColumnOrdering.SearchForFioColumnOnly)
                     {
@@ -557,7 +516,7 @@
                     {
                         _ when AsposeLicense.Licensed => AsposeExcelAdapter.CreateAdapter(inputFile, CurrentOptions.MaxRows),
                         ".xls" => throw new Exception("xls file format is not supported"),
-                        _ => throw new Exception($"Cannot find adapter for {inputFile}"),
+                        _ => throw new Exception($"Cannot find adapter for {inputFile}"),                           // Mistake? shouldn't it be OpenXml or something?
                     },
                     AdapterFamily.Npoi => NpoiExcelAdapter.CreateAdapter(inputFile, CurrentOptions.MaxRows),
                     _ => throw new Exception($"Cannot find adapter for {inputFile}"),

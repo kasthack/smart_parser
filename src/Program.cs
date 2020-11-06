@@ -9,14 +9,14 @@ using Parser.Lib;
 using TI.Declarator.DeclaratorApiClient;
 using TI.Declarator.ParserCommon;
 using TI.Declarator.JsonSerialization;
-using CMDLine;
 using System.Security.Cryptography;
 using Newtonsoft.Json;
-using System.Reflection;
-using Newtonsoft.Json;
+using System.CommandLine;
+using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
 
 namespace Smart.Parser
-    {
+{
     public class SmartParserVersions
     {
         public List<Version> versions = new List<Version>();
@@ -27,223 +27,109 @@ namespace Smart.Parser
             public string info = "";
         }
     }
-
+    public enum AdapterFamily
+    {
+        aspose,
+        npoi,
+        microsoft,
+        prod,
+    }
     public class Program
     {
-        public static string OutFile = "";
-        public static string AdapterFamily = "prod";
-        static bool ColumnsOnly = false;
+        public static Options CurrentOptions { get; private set; } = new Options();
 
-        static bool CheckJson = false;
-        public static int MaxRowsToProcess = -1;
-        public static DeclarationField ColumnToDump = DeclarationField.None;
-        public static string TolokaFileName = "";
-        public static string HtmlFileName = "";
-        public static bool SkipRelativeOrphan = false;
-        public static bool ValidateByApi = false;
-        public static bool IgnoreDirectoryIds = false;
-        public static bool BuildTrigrams = false;
-        public static int? UserDocumentFileId;
-
-        static string ParseArgs(string[] args)
+        public class Options
         {
-            CMDLineParser parser = new CMDLineParser();
-            CMDLineParser.Option outputOpt = parser.AddStringParameter("-o", "use file for output", false);
-            CMDLineParser.Option licenseOpt = parser.AddStringParameter("-license", "", false);
-            CMDLineParser.Option mainLogOpt = parser.AddStringParameter("-log", "", false);
-            CMDLineParser.Option skipLoggingOpt = parser.AddBoolSwitch("-skip-logging", "");
-            CMDLineParser.Option verboseOpt =
-                parser.AddStringParameter("-v", "verbose level: debug, info, error", false);
-            CMDLineParser.Option columnsOnlyOpt = parser.AddBoolSwitch("-columnsonly", "");
-            CMDLineParser.Option checkJsonOpt = parser.AddBoolSwitch("-checkjson", "");
-            CMDLineParser.Option adapterOpt = parser.AddStringParameter("-adapter",
-                "can be aspose,npoi, microsoft or prod, by default is aspose", false);
-            CMDLineParser.Option maxRowsToProcessOpt =
-                parser.AddStringParameter("-max-rows", "max rows to process from the input file", false);
-            CMDLineParser.Option dumpColumnOpt = parser.AddStringParameter("-dump-column",
-                "dump column identified by enum DeclarationField and exit", false);
-            CMDLineParser.Option dumpHtmlOpt = parser.AddStringParameter("-dump-html", "dump table to html", false);
-            CMDLineParser.Option tolokaFileNameOpt =
-                parser.AddStringParameter("-toloka", "generate toloka html", false);
-            CMDLineParser.Option skipRelativeOrphanOpt = parser.AddBoolSwitch("-skip-relative-orphan", "");
-            CMDLineParser.Option apiValidationOpt =
-                parser.AddBoolSwitch("-api-validation", "validate JSON output by API call");
-            CMDLineParser.Option buildTrigramsOpt = parser.AddBoolSwitch("-build-trigrams", "build trigrams");
-            CMDLineParser.Option checkPredictorOpt =
-                parser.AddBoolSwitch("-check-predictor", "calc predictor precision");
-            CMDLineParser.Option docFileIdOpt = parser.AddStringParameter("-docfile-id",
-                "document id to initialize document/documentfile_id", false);
-            CMDLineParser.Option convertedFileStorageUrlOpt = parser.AddStringParameter("-converted-storage-url",
-                "document id to initialize document/documentfile_id for example http://disclosures.ru:8091, the default value is read from env variable DECLARATOR_CONV_URL",
-                false);
-            CMDLineParser.Option fioOnlyOpt = parser.AddBoolSwitch("-fio-only", "");
-            CMDLineParser.Option useDecimalRawNormalizationOpt = parser.AddBoolSwitch("-decimal-raw-normalization",
-                "print raw floats in Russian traditional format");
-            CMDLineParser.Option disclosuresOpt = parser.AddBoolSwitch("-disclosures",
-                "use disclosures output format: save sheet id to each each section, do not produce many output files but one");
-            CMDLineParser.Option versionOpt = parser.AddBoolSwitch("-version",
-                "print version");
-            parser.AddHelpOption();
-            try
-            {
-                //parse the command line
-                parser.Parse(args);
-            }
-            catch (Exception ex)
-            {
-                //show available options      
-                Console.Write(parser.HelpMessage());
-                Console.WriteLine();
-                Console.WriteLine("Error: " + ex.Message);
-                throw;
-            }
+            public string OutputFile { get; set; }
+            public string License { get; set; }
+            public string Log { get; set; }
+            public bool SkipLogging { get; set; }
+            public Logger.LogLevel Verbose { get; set; }
+            public bool Columnsonly { get; set; }
+            public bool Checkjson { get; set; }
+            public AdapterFamily Adapter { get; set; } = AdapterFamily.prod;
+            public int MaxRows { get; set; } = -1;
+            public DeclarationField DumpColumn { get; set; } = DeclarationField.None;
+            public string DumpHtml { get; set; }
+            public string Toloka { get; set; }
+            public bool SkipRelativeOrphan { get; set; }
+            public bool ApiValidation { get; set; }
+            public bool BuildTrigrams { get; set; }
+            public bool CheckPredictor { get; set; }
+            public int? DocfileId { get; set; }
+            public string ConvertedStorageUrl { get; set; }
+            public bool FioOnly { get; set; }
+            public bool DecimalRawNormalization { get; set; }
+            public bool Disclosures { get; set; }
+            public string InputFile { get; set; }
+        }
 
-            if (versionOpt.isMatched)
+        private static RootCommand BuildOptions() => new RootCommand
             {
-                PrintVersion();
-                System.Environment.Exit(0);
-            }
-            if (licenseOpt.isMatched)
+                new Option<string>(new[] { "--outputFile", "-o" }, "use file for output"),
+                new Option<string>("-license", ""),
+                new Option<string>("-log", ""),
+                new Option<bool>("-skip-logging", ""),
+                new Option<Logger.LogLevel>(new[]{ "--verbose", "-v" }, () => Logger.LogLevel.Info, "verbose level"),
+                new Option<bool>("-columnsonly", ""),
+                new Option<bool>("-checkjson", ""),
+                new Option<AdapterFamily>("-adapter", () => AdapterFamily.prod, "can be aspose,npoi, microsoft or prod, by default is aspose"),
+                new Option<int>("-max-rows", () => -1, "max rows to process from the input file"),
+                new Option<DeclarationField>("-dump-column", ()=> DeclarationField.None, "dump column identified by enum DeclarationField and exit"),
+                new Option<string>("-dump-html", "dump table to html"),
+                new Option<string>("-toloka", "generate toloka html"),
+                new Option<bool>("-skip-relative-orphan", ""),
+                new Option<bool>("-api-validation", "validate JSON output by API call"),
+                new Option<bool>("-build-trigrams", "build trigrams"),
+                new Option<bool>("-check-predictor", "calc predictor precision"),
+                new Option<string>("-docfile-id", ()=> null, "document id to initialize document/documentfile_id"),
+                new Option<string>("-converted-storage-url", "document id to initialize document/documentfile_id for example http://disclosures.ru:8091, the default value is read from env variable DECLARATOR_CONV_URL"),
+                new Option<bool>("-fio-only", ""),
+                new Option<bool>("-decimal-raw-normalization", "print raw floats in Russian traditional format"),
+                new Option<bool>("-disclosures", "use disclosures output format: save sheet id to each each section, do not produce many output files but one"),
+                new Argument<string>("inputFile")
+                {
+                    Arity = ArgumentArity.ExactlyOne,
+                },
+                //version is handled automatically by .net
+                //help is handled automatically
+            };
+
+
+        private static void Configure(Options options)
+        {
+            Logger.Setup(string.IsNullOrEmpty(options.Log) ? "" : Path.GetFullPath(options.Log), options.SkipLogging);
+            Logger.SetLoggingLevel(options.Verbose);
+
+            if (!string.IsNullOrEmpty(options.License))
             {
-                AsposeLicense.SetLicense(licenseOpt.Value.ToString());
+                AsposeLicense.SetLicense(options.License);
                 if (!AsposeLicense.Licensed)
                 {
-                    throw new SmartParserException("Not valid aspose licence " + licenseOpt.Value.ToString());
+                    throw new SmartParserException($"Not valid aspose licence {options.License}");
                 }
             }
 
-            Smart.Parser.Lib.Parser.InitializeSmartParser();
-            if (maxRowsToProcessOpt.isMatched)
+            if (string.IsNullOrEmpty(options.ConvertedStorageUrl))
             {
-                MaxRowsToProcess = System.Convert.ToInt32(maxRowsToProcessOpt.Value.ToString());
+                IAdapter.ConvertedFileStorageUrl = options.ConvertedStorageUrl;
             }
-
-            if (docFileIdOpt.isMatched)
-            {
-                UserDocumentFileId = System.Convert.ToInt32(docFileIdOpt.Value.ToString());
-            }
-            if (disclosuresOpt.isMatched)
+            if (options.Disclosures)
             {
                 DeclarationSerializer.SmartParserJsonFormat = SmartParserJsonFormatEnum.Disclosures;
             }
+            Smart.Parser.Lib.Parser.InitializeSmartParser();
+            Smart.Parser.Lib.Parser.UseDecimalRawNormalization = options.DecimalRawNormalization;
+            ColumnOrdering.SearchForFioColumnOnly = options.FioOnly;
+            ColumnPredictor.CalcPrecision = options.CheckPredictor;
 
-            string logFileName = "";
-            if (mainLogOpt.isMatched)
-            {
-                logFileName = Path.GetFullPath(mainLogOpt.Value.ToString());
-            }
-
-            Logger.Setup(logFileName, skipLoggingOpt.isMatched);
-            if (outputOpt.isMatched)
-            {
-                OutFile = outputOpt.Value.ToString();
-            }
-
-            Logger.LogLevel verboseLevel = Logger.LogLevel.Info;
-            if (verboseOpt.isMatched)
-            {
-                switch (verboseOpt.Value.ToString())
-                {
-                    case "info":
-                        verboseLevel = Logger.LogLevel.Info;
-                        break;
-                    case "error":
-                        verboseLevel = Logger.LogLevel.Error;
-                        break;
-                    case "debug":
-                        verboseLevel = Logger.LogLevel.Debug;
-                        break;
-                    default:
-                        {
-                            throw new Exception("unknown verbose level " + verboseOpt.Value.ToString());
-                        }
-                }
-            }
-
-            Logger.SetLoggingLevel(verboseLevel);
-
-            SkipRelativeOrphan = skipRelativeOrphanOpt.isMatched;
-            ValidateByApi = apiValidationOpt.isMatched;
-
-            if (adapterOpt.isMatched)
-            {
-                AdapterFamily = adapterOpt.Value.ToString();
-                if (AdapterFamily != "aspose" &&
-                    AdapterFamily != "npoi" &&
-                    AdapterFamily != "microsoft" &&
-                    AdapterFamily != "prod")
-                {
-                    throw new Exception("unknown adapter family " + AdapterFamily);
-                }
-            }
-
-            if (dumpColumnOpt.isMatched)
-            {
-                ColumnToDump = (DeclarationField)Enum.Parse(typeof(DeclarationField), dumpColumnOpt.Value.ToString());
-            }
-
-            if (dumpHtmlOpt.isMatched)
-            {
-                HtmlFileName = dumpHtmlOpt.Value.ToString();
-            }
-
-            if (convertedFileStorageUrlOpt.isMatched)
-            {
-                IAdapter.ConvertedFileStorageUrl = convertedFileStorageUrlOpt.Value.ToString();
-            }
-
-            if (tolokaFileNameOpt.isMatched)
-            {
-                TolokaFileName = tolokaFileNameOpt.Value.ToString();
-            }
-
-            if (useDecimalRawNormalizationOpt.isMatched)
-            {
-                Smart.Parser.Lib.Parser.UseDecimalRawNormalization = true;
-            }
-
-
-            ColumnsOnly = columnsOnlyOpt.isMatched;
-            ColumnOrdering.SearchForFioColumnOnly = fioOnlyOpt.isMatched;
-            CheckJson = checkJsonOpt.isMatched;
-            BuildTrigrams = buildTrigramsOpt.isMatched;
-            ColumnPredictor.CalcPrecision = checkPredictorOpt.isMatched;
-            var freeArgs = parser.RemainingArgs();
-            return String.Join(" ", freeArgs).Trim(new char[] { '"' });
+            options.OutputFile = string.IsNullOrEmpty(options.OutputFile) ? BuildOutFileNameByInput(options.InputFile) : Path.GetFullPath(options.OutputFile);
+            
+            CurrentOptions = options;
         }
+        public static string BuildOutFileNameByInput(string inputFile) => Path.Combine(Path.GetDirectoryName(inputFile), $"{Path.GetFileName(inputFile)}.json");
 
-        public static void PrintVersion()
-        {
-            var currentAssembly = Assembly.GetExecutingAssembly();
-            using (var stream = currentAssembly.GetManifestResourceStream("Smart.Parser.Resources.versions.txt"))
-            {
-                using (var file = new System.IO.StreamReader(stream))
-                {
-                    string jsonStr = file.ReadToEnd();
-                    var versions = JsonConvert.DeserializeObject<SmartParserVersions>(jsonStr);
-                    Console.WriteLine(versions.versions[versions.versions.Count - 1].id);
-                }
-            }
-        }
-
-        public static string BuildOutFileNameByInput(string inputFile)
-        {
-            return Path.Combine(Path.GetDirectoryName(inputFile), Path.GetFileName(inputFile) + ".json");
-        }
-
-        static bool IsDirectory(string fileName)
-        {
-            try
-            {
-                return (File.GetAttributes(fileName) & FileAttributes.Directory) == FileAttributes.Directory;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-
+        static bool IsDirectory(string fileName) => Directory.Exists(fileName);
 
         private static string SupportedFileTypesPattern = "*.pdf, *.xls, *.xlsx, *.doc, *.docx";
 
@@ -259,13 +145,13 @@ namespace Smart.Parser
             if (fileMask.StartsWith("@"))
             {
                 string fileName = fileMask.Substring(1);
-                Logger.Info("Reading files list from " + fileName);
+                Logger.Info($"Reading files list from {fileName}");
 
                 files = File.ReadAllLines(fileName).ToArray();
             }
             else
             {
-                Logger.Info("Parsing files by mask " + fileMask);
+                Logger.Info($"Parsing files by mask {fileMask}");
 
                 files = Directory.GetFiles(Path.GetDirectoryName(fileMask), Path.GetFileName(fileMask),
                     SearchOption.AllDirectories);
@@ -288,7 +174,7 @@ namespace Smart.Parser
 
             foreach (string file in files)
             {
-                Logger.Info("Parsing file " + file);
+                Logger.Info($"Parsing file {file}");
                 bool caught = false;
                 try
                 {
@@ -298,14 +184,14 @@ namespace Smart.Parser
                 catch (SmartParserException e)
                 {
                     caught = true;
-                    Logger.Error("Parsing Exception " + e.ToString());
+                    Logger.Error($"Parsing Exception {e}");
                     parse_results["exception"].Add(file);
                 }
                 catch (Exception e)
                 {
                     caught = true;
-                    Logger.Error("Parsing Exception " + e.ToString());
-                    Logger.Debug("Stack: " + e.StackTrace);
+                    Logger.Error($"Parsing Exception {e}");
+                    Logger.Debug($"Stack: {e.StackTrace}");
                     parse_results["exception"].Add(file);
                 }
                 finally
@@ -382,7 +268,7 @@ namespace Smart.Parser
                     }
                     else
                     {
-                        return new AngleHtmlAdapter(inputFile, MaxRowsToProcess);
+                        return new AngleHtmlAdapter(inputFile, CurrentOptions.MaxRows);
                     }
                 case ".pdf":
                 case ".xhtml":
@@ -393,7 +279,7 @@ namespace Smart.Parser
                     return GetCommonAdapter(inputFile);
                 case ".xls":
                 case ".xlsx":
-                    if (AdapterFamily == "aspose" || AdapterFamily == "prod")
+                    if (CurrentOptions.Adapter == AdapterFamily.aspose || CurrentOptions.Adapter == AdapterFamily.prod)
                     {
                         if (!AsposeLicense.Licensed && extension == ".xls")
                         {
@@ -402,12 +288,12 @@ namespace Smart.Parser
 
                         if (AsposeLicense.Licensed)
                         {
-                            return AsposeExcelAdapter.CreateAdapter(inputFile, MaxRowsToProcess);
+                            return AsposeExcelAdapter.CreateAdapter(inputFile, CurrentOptions.MaxRows);
                         }
                     }
-                    else if (AdapterFamily == "npoi")
+                    else if (CurrentOptions.Adapter == AdapterFamily.npoi)
                     {
-                        return NpoiExcelAdapter.CreateAdapter(inputFile, MaxRowsToProcess);
+                        return NpoiExcelAdapter.CreateAdapter(inputFile, CurrentOptions.MaxRows);
                     }
                     else
                     {
@@ -416,21 +302,21 @@ namespace Smart.Parser
 
                     break;
                 default:
-                    Logger.Error("Unknown file extension " + extension);
+                    Logger.Error($"Unknown file extension {extension}");
                     return null;
             }
 
-            Logger.Error("Cannot find adapter for " + inputFile);
+            Logger.Error($"Cannot find adapter for {inputFile}");
             return null;
         }
 
         private static IAdapter GetCommonAdapter(string inputFile)
         {
-            if (AdapterFamily != "aspose")
+            if (CurrentOptions.Adapter != AdapterFamily.aspose)
             {
-                if (AdapterFamily == "prod")
+                if (CurrentOptions.Adapter == AdapterFamily.prod)
                 {
-                    return OpenXmlWordAdapter.CreateAdapter(inputFile, MaxRowsToProcess);
+                    return OpenXmlWordAdapter.CreateAdapter(inputFile, CurrentOptions.MaxRows);
                 }
             }
             else if (!AsposeLicense.Licensed)
@@ -456,27 +342,27 @@ namespace Smart.Parser
 
         public static string CalculateMD5(string filename)
         {
-            using (var md5 = MD5.Create())
-            {
-                using (var stream = File.OpenRead(filename))
-                {
-                    var hash = md5.ComputeHash(stream);
-                    return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
-                }
-            }
+            using var md5 = MD5.Create();
+            using var stream = File.OpenRead(filename);
+            var hash = md5.ComputeHash(stream);
+            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
         }
 
         static string BuildInputFileId(IAdapter adapter, string filename)
         {
-            return CalculateMD5(filename) + "_" + adapter.GetWorksheetName();
+            return $"{CalculateMD5(filename)}_{adapter.GetWorksheetName()}";
         }
 
         public static void SaveRandomPortionToToloka(IAdapter adapter, ColumnOrdering columnOrdering,
             Declaration declaration, string inputFileName)
         {
-            if (TolokaFileName == "") return;
+            if (string.IsNullOrEmpty(CurrentOptions.Toloka))
+            {
+                return;
+            }
+
             string fileID = BuildInputFileId(adapter, inputFileName);
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(TolokaFileName))
+            using (StreamWriter file = new StreamWriter(CurrentOptions.Toloka))
             {
                 file.WriteLine("INPUT:input_id\tINPUT:input_json\tGOLDEN:declaration_json\tHINT:text");
                 Random random = new Random();
@@ -489,8 +375,8 @@ namespace Smart.Parser
                 json.Title = declaration.Properties.SheetTitle;
                 string jsonStr = JsonConvert.SerializeObject(json);
                 jsonStr = jsonStr.Replace("\t", " ").Replace("\\t", " ").Replace("\"", "\"\"");
-                string id = fileID + "_" + dataStart + "_" + dataEnd;
-                file.WriteLine(id + "\t" + "\"" + jsonStr + "\"\t\t");
+                string id = $"{fileID}_{dataStart}_{dataEnd}";
+                file.WriteLine($"{id}\t\"{jsonStr}\"\t\t");
             }
         }
 
@@ -498,7 +384,7 @@ namespace Smart.Parser
         {
             Declaration declaration;
             string inputFileName = Path.GetFileName(inputFile);
-            Smart.Parser.Lib.Parser parser = new Smart.Parser.Lib.Parser(adapter, !SkipRelativeOrphan);
+            Lib.Parser parser = new Lib.Parser(adapter, !CurrentOptions.SkipRelativeOrphan);
 
             if (adapter.CurrentScheme == default)
             {
@@ -516,15 +402,16 @@ namespace Smart.Parser
                     Logger.Info(ordering.ToString());
                 }
 
-                Logger.Info(String.Format("OwnershipTypeInSeparateField: {0}",
-                    columnOrdering.OwnershipTypeInSeparateField));
+                Logger.Info($"OwnershipTypeInSeparateField: {columnOrdering.OwnershipTypeInSeparateField}");
 
-                if (ColumnsOnly)
-                    return null;
-
-                if (ColumnToDump != DeclarationField.None)
+                if (CurrentOptions.Columnsonly)
                 {
-                    DumpColumn(adapter, columnOrdering, ColumnToDump);
+                    return null;
+                }
+
+                if (CurrentOptions.DumpColumn != DeclarationField.None)
+                {
+                    DumpColumn(adapter, columnOrdering, CurrentOptions.DumpColumn);
                     return null;
                 }
 
@@ -565,12 +452,12 @@ namespace Smart.Parser
                     }
                 }
 
-                declaration = parser.Parse(columnOrdering, BuildTrigrams, UserDocumentFileId);
+                declaration = parser.Parse(columnOrdering, CurrentOptions.BuildTrigrams, CurrentOptions.DocfileId);
                 SaveRandomPortionToToloka(adapter, columnOrdering, declaration, inputFile);
             }
             else
             {
-                declaration = adapter.CurrentScheme.Parse(parser, UserDocumentFileId);
+                declaration = adapter.CurrentScheme.Parse(parser, CurrentOptions.DocfileId);
             }
             return declaration;
         }
@@ -580,46 +467,45 @@ namespace Smart.Parser
             string schema_errors = null;
             string output = DeclarationSerializer.Serialize(declaration, ref schema_errors);
 
-            if (!String.IsNullOrEmpty(schema_errors))
+            if (!string.IsNullOrEmpty(schema_errors))
             {
-                Logger.Error("Json schema errors:" + schema_errors);
+                Logger.Error($"Json schema errors:{schema_errors}");
             }
             else
             {
                 Logger.Info("Json schema OK");
             }
 
-            Logger.Info("Output size: " + output.Length);
+            Logger.Info($"Output size: {output.Length}");
 
-            if (ValidateByApi)
+            if (CurrentOptions.ApiValidation)
             {
                 string validationResult = ApiClient.ValidateParserOutput(output);
                 if (validationResult != "[]")
                 {
                     string inputFileName = Path.GetFileName(inputFile);
-                    string errorsFileName = "validation_errors_" +
-                                            Path.GetFileNameWithoutExtension(inputFileName) + ".json";
+                    string errorsFileName = $"validation_errors_{Path.GetFileNameWithoutExtension(inputFileName)}.json";
                     var rep = MiscSerializer.DeserializeValidationReport(validationResult);
                     File.WriteAllText(errorsFileName, validationResult);
-                    Logger.Error("Api validation failed. Errors:" + errorsFileName);
+                    Logger.Error($"Api validation failed. Errors:{errorsFileName}");
                 }
             }
             return output;
         }
 
-        public static void WriteOutputJson (string inputFile, Declaration declarations, string outFile)
+        public static void WriteOutputJson(string inputFile, Declaration declarations, string outFile)
         {
             if (declarations != null)
             {
                 string output = DumpDeclarationsToJson(inputFile, declarations);
-                Logger.Info("Writing json to " + outFile);
+                Logger.Info($"Writing json to {outFile}");
                 File.WriteAllBytes(outFile, Encoding.UTF8.GetBytes(output));
             }
         }
 
         public static int ParseFile(string inputFile, string outFile)
         {
-            if (CheckJson && File.Exists(outFile))
+            if (CurrentOptions.Checkjson && File.Exists(outFile))
             {
                 Logger.Info("JSON file {0} already exist", outFile);
                 return 0;
@@ -634,25 +520,28 @@ namespace Smart.Parser
 
             ColumnPredictor.InitializeIfNotAlready();
 
-            string logFile = Path.Combine(Path.GetDirectoryName(inputFile),
-                Path.GetFileName(inputFile) + ".log");
+            string logFile = Path.Combine(Path.GetDirectoryName(inputFile), $"{Path.GetFileName(inputFile)}.log");
             Logger.SetSecondLogFileName(Path.GetFullPath(logFile));
 
-            Logger.Info(String.Format("Parsing {0}", inputFile));
+            Logger.Info($"Parsing {inputFile}");
             IAdapter adapter = GetAdapter(inputFile);
 
-            Logger.Info(String.Format("TablesCount = {0}", adapter.GetTablesCount()));
-            Logger.Info(String.Format("RowsCount = {0}", adapter.GetRowsCount()));
+            Logger.Info($"TablesCount = {adapter.GetTablesCount()}");
+            Logger.Info($"RowsCount = {adapter.GetRowsCount()}");
 
             if (adapter.GetTablesCount() == 0 && !inputFile.EndsWith(".toloka_json"))
+            {
                 throw new SmartParserException("No tables found in document");
+            }
 
-            if (HtmlFileName != "")
-                adapter.WriteHtmlFile(HtmlFileName);
+            if (CurrentOptions.DumpHtml != "")
+            {
+                adapter.WriteHtmlFile(CurrentOptions.DumpHtml);
+            }
 
             if (adapter.GetWorkSheetCount() > 1)
             {
-                Logger.Info(String.Format("File has multiple ({0}) worksheets", adapter.GetWorkSheetCount()));
+                Logger.Info($"File has multiple ({adapter.GetWorkSheetCount()}) worksheets");
                 Declaration allDeclarations = null;
                 for (int sheetIndex = 0; sheetIndex < adapter.GetWorkSheetCount(); sheetIndex++)
                 {
@@ -673,16 +562,15 @@ namespace Smart.Parser
                         }
                         else
                         {
-                            string curOutFile = outFile.Replace(".json", "_" + sheetIndex.ToString() + ".json");
-                            Logger.Info(String.Format("Parsing worksheet {0} into file {1}", sheetIndex, curOutFile));
+                            string curOutFile = outFile.Replace(".json", $"_{sheetIndex}.json");
+                            Logger.Info($"Parsing worksheet {sheetIndex} into file {curOutFile}");
                             WriteOutputJson(inputFile, BuildDeclarations(adapter, inputFile), curOutFile);
 
                         }
                     }
                     catch (ColumnDetectorException)
                     {
-                        Logger.Info(String.Format("Skipping empty sheet {0} (No headers found exception thrown)",
-                            sheetIndex));
+                        Logger.Info($"Skipping empty sheet {sheetIndex} (No headers found exception thrown)");
                     }
                     if (allDeclarations != null)
                     {
@@ -697,69 +585,63 @@ namespace Smart.Parser
 
             return 0;
         }
-        public static int Main(string[] args)
+        public static void Main(string[] args)
         {
-            string inputFile = ParseArgs(args);
-            Logger.Info("Command line: " + String.Join(" ", args));
-            if (String.IsNullOrEmpty(inputFile))
-            {
-                Console.WriteLine("no input file or directory");
-                return 1;
-            }
-
-
-            if (IsDirectory(inputFile))
-            {
-                return ParseDirectory(inputFile);
-            }
-
-            if (inputFile.Contains("*") || inputFile.Contains("?") || inputFile.StartsWith("@"))
-            {
-                return ParseByFileMask(inputFile);
-            }
-
-            try
-            {
-                Logger.SetOutSecond();
-                if (OutFile == "")
+            RootCommand rootCommand = BuildOptions();
+            rootCommand.Handler = CommandHandler
+                .Create<Options>(options =>
                 {
-                    OutFile = BuildOutFileNameByInput(inputFile);
-                }
+                    Configure(options);
+                    Logger.Info($"Command line: {string.Join(" ", args)}");
 
-                ParseFile(inputFile, OutFile);
-            }
-            catch (SmartParserException e)
-            {
-                Logger.Error("Parsing Exception " + e.ToString());
-            }
-            catch (Exception e)
-            {
-                Logger.Error("Unknown Parsing Exception " + e.ToString());
-                Logger.Info("Stack: " + e.StackTrace);
-            }
-            finally
-            {
-                Logger.SetOutMain();
-            }
 
-            if (ColumnPredictor.CalcPrecision)
-            {
-                Logger.Info(ColumnPredictor.GetPrecisionStr());
-            }
+                    if (IsDirectory(options.InputFile))
+                    {
+                        return ParseDirectory(options.InputFile);
+                    }
 
-            if (Logger.Errors.Count() > 0)
-            {
-                Logger.Info("*** Errors ({0}):", Logger.Errors.Count());
+                    if (options.InputFile.Contains("*") || options.InputFile.Contains("?") || options.InputFile.StartsWith("@"))
+                    {
+                        return ParseByFileMask(options.InputFile);
+                    }
 
-                foreach (string e in Logger.Errors)
-                {
-                    Logger.Info(e);
-                }
-            }
+                    try
+                    {
+                        Logger.SetOutSecond();
+                        ParseFile(options.InputFile, options.OutputFile);
+                    }
+                    catch (SmartParserException e)
+                    {
+                        Logger.Error($"Parsing Exception {e}");
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.Error($"Unknown Parsing Exception {e}");
+                        Logger.Info($"Stack: {e.StackTrace}");
+                    }
+                    finally
+                    {
+                        Logger.SetOutMain();
+                    }
 
-            return 0;
+                    if (ColumnPredictor.CalcPrecision)
+                    {
+                        Logger.Info(ColumnPredictor.GetPrecisionStr());
+                    }
+
+                    if (Logger.Errors.Count() > 0)
+                    {
+                        Logger.Info("*** Errors ({0}):", Logger.Errors.Count());
+
+                        foreach (string e in Logger.Errors)
+                        {
+                            Logger.Info(e);
+                        }
+                    }
+
+                    return 0;
+                });
+            rootCommand.Invoke(args);
         }
-
     }
-
 }

@@ -54,19 +54,14 @@ namespace Smart.Parser.Adapters
         {
             if (!columnOrdering.ColumnOrder.TryGetValue(field, out colSpan))
             {
-                throw new SmartParserFieldNotFoundException(String.Format("Field {0} not found, row={1}", field.ToString(), row));
+                throw new SmartParserFieldNotFoundException($"Field {field.ToString()} not found, row={row}");
             }
 
             var exactCell = GetCell(row, colSpan.BeginColumn);
             if (exactCell == null)
             {
                 var rowData = GetCells(row);
-                throw new SmartParserFieldNotFoundException(String.Format("Field {0} not found, row={1}, col={2}. Row.Cells.Count = {3}",
-                    field.ToString(),
-                    row,
-                    colSpan.BeginColumn,
-                    rowData.Count
-                    ));
+                throw new SmartParserFieldNotFoundException($"Field {field.ToString()} not found, row={row}, col={colSpan.BeginColumn}. Row.Cells.Count = {rowData.Count}");
             }
             return exactCell;
         }

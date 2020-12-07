@@ -532,8 +532,7 @@
             {
                 var currRow = adapter.GetRow(columnOrdering, row);
                 var cell = currRow.GetDeclarationField(columnToDump);
-                var s = (cell == null) ? "null" : cell.GetText();
-                s = s.Replace("\n", "\\n");
+                var s = (cell?.GetText() ?? "null").Replace("\n", "\\n");
                 Console.WriteLine(s);
             }
         }

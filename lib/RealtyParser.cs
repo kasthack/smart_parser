@@ -338,7 +338,7 @@ namespace Smart.Parser.Lib
 
         static string SliceArrayAndTrim(string[] lines, int start, int end)
         {
-            return String.Join("\n", lines.Skip(start).Take(end - start)).ReplaceEolnWithSpace();
+            return String.Join("\n", lines[start..end]).ReplaceEolnWithSpace();
         }
 
         static List<string> DivideByBordersOrEmptyLines(string value, List<int> linesWithNumbers)
@@ -396,21 +396,21 @@ namespace Smart.Parser.Lib
             // Eg: "1. Квартира\n2. Квартира"
             if (Regex.Matches(value, @"^\d\.\s+.+\n\d\.\s", RegexOptions.Singleline).Count > 0)
             {
-                lines = (string[])Regex.Split(value, @"\d\.\s").Skip(1).ToArray();
+                lines = Regex.Split(value, @"\d\.\s").Skip(1).ToArray();
                 return lines;
             }
 
             // Eg: "- Квартира\n- Квартира"
             if (Regex.Matches(value, @"^\p{Pd}\s+.+\n\p{Pd}\s", RegexOptions.Singleline).Count > 0)
             {
-                lines = (string[])Regex.Split(value, @"\n\p{Pd}");
+                lines = Regex.Split(value, @"\n\p{Pd}");
                 return lines;
             }
 
             // Eg: "... собственность) - Жилой дом ..."
             if (Regex.Matches(value, @"^\p{Pd}.+\)[\s\n]+\p{Pd}\s", RegexOptions.Singleline).Count > 0)
             {
-                lines = (string[])Regex.Split(value, @"[\s\n]\p{Pd}\s");
+                lines = Regex.Split(value, @"[\s\n]\p{Pd}\s");
                 return lines;
             }
 

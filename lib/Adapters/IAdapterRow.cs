@@ -292,10 +292,9 @@ namespace Smart.Parser.Adapters
 
         public string GetContents(DeclarationField field, bool except = true)
         {
-            if (!ColumnOrdering.ContainsField(field))
+            if (!ColumnOrdering.ContainsField(field) && !except)
             {
-                if (!except)
-                    return "";
+                return "";
             }
 
             Cell c;
@@ -303,18 +302,12 @@ namespace Smart.Parser.Adapters
             {
                 c = GetDeclarationField(field);
             }
-            catch (SmartParserFieldNotFoundException e)
-            {
-                if (!except)
-                    return "";
-                throw e; 
-            }
-
-            if (c == null)
+            catch (SmartParserFieldNotFoundException) when (!except)
             {
                 return "";
             }
-            return c.GetText(true);
+
+            return c?.GetText(true) ?? "";
         }
 
         public bool IsEmpty()
@@ -330,7 +323,7 @@ namespace Smart.Parser.Adapters
                 string indexStr = GetDeclarationField(DeclarationField.Number).Text
                     .Replace(".", "").ReplaceEolnWithSpace();
                 int indVal;
-                bool dummyRes = Int32.TryParse(indexStr, out indVal);
+                bool dummyRes = int.TryParse(indexStr, out indVal);
                 if (dummyRes)
                 {
                     index = indVal;
@@ -343,13 +336,12 @@ namespace Smart.Parser.Adapters
         {
             if (DataHelper.IsEmptyValue(value))
             {
-                value = String.Empty;
+                value = string.Empty;
             }
             RelativeType = value;
-            if (RelativeType != String.Empty && !DataHelper.IsRelativeInfo(RelativeType))
+            if (RelativeType != string.Empty && !DataHelper.IsRelativeInfo(RelativeType))
             {
-                throw new SmartParserException(
-                    string.Format("Wrong relative type {0} at row {1}", RelativeType, GetRowIndex()));
+                throw new SmartParserException($"Wrong relative type {RelativeType} at row {GetRowIndex()}");
             }
         }
 
@@ -371,37 +363,40 @@ namespace Smart.Parser.Adapters
                 string[] two_parts = Regex.Split(v, pattern);
                 string clean_v = Regex.Replace(v, pattern, " ");
                 string[] words = Regex.Split(clean_v, @"[\,\s\n]+");
-                
-                if (words.Length >= 3 && TextHelpers.CanBePatronymic(words[2]) 
-                                      && !TextHelpers.MayContainsRole(words[0])
-                                      && !TextHelpers.MayContainsRole(words[1]))
+
+                (PersonName, Occupation) = (words, two_parts) switch
                 {
                     // ex: "Рутенберг Дмитрий Анатольевич начальник управления"
-                    PersonName = String.Join(" ", words.Take(3)).Trim();
-                    Occupation = String.Join(" ", words.Skip(3)).Trim();
-                }
-                else if (TextHelpers.CanBePatronymic(words.Last()))
-                {
+                    ({ Length: >= 3 }, _) when
+                        TextHelpers.CanBePatronymic(words[2])
+                        && !TextHelpers.MayContainsRole(words[0])
+                        && !TextHelpers.MayContainsRole(words[1])
+                            => (
+                                string.Join(" ", words.Take(3)).Trim(),
+                                string.Join(" ", words.Skip(3)).Trim()
+                            ),
                     // ex: "начальник управления Рутенберг Дмитрий Анатольевич"
-                    PersonName = String.Join(" ", words.Skip(words.Length - 3)).Trim();
-                    Occupation = String.Join(" ", words.Take(words.Length - 3)).Trim();
-                }
-                else if (words.Length >= 2 && TextHelpers.CanBeInitials(words[1]) && TextHelpers.MayContainsRole(String.Join(" ", words.Skip(2)).Trim()))
-                {
+                    (_, _) when
+                        TextHelpers.CanBePatronymic(words.Last())
+                            => (
+                                string.Join(" ", words.TakeLast(3)).Trim(),
+                                string.Join(" ", words.SkipLast(3)).Trim()
+                            ),
                     // ex: "Головачева Н.В., заместитель"
-                    PersonName = String.Join(" ", words.Take(2)).Trim();
-                    Occupation = String.Join(" ", words.Skip(2)).Trim();
-                }
-                else if (two_parts.Length == 2)
-                {
-                    PersonName = two_parts[0].Trim();
-                    Occupation = String.Join(" - ", two_parts.Skip(1)).Trim();
-                }
-                else
-                {
-                    throw new SmartParserException(
-                        string.Format("Cannot parse name+occupation value {0} at row {1}", v, GetRowIndex()));
-                }
+                    ({ Length: >= 2 }, _) when
+                        TextHelpers.CanBeInitials(words[1])
+                        && TextHelpers.MayContainsRole(string.Join(" ", words.Skip(2)).Trim())
+                            => (
+                                    string.Join(" ", words.Take(2)).Trim(),
+                                    string.Join(" ", words.Skip(2)).Trim()
+                                ),
+                    (_, { Length: 2 })
+                            => (
+                                two_parts[0].Trim(),
+                                string.Join(" - ", two_parts.Skip(1)).Trim()
+                            ),
+                    (_, _) => throw new SmartParserException($"Cannot parse name+occupation value {v} at row {GetRowIndex()}"),
+                };
             }
         }
 
@@ -456,7 +451,7 @@ namespace Smart.Parser.Adapters
                     else
                     { 
                         PersonName = nameOrRelativeType;
-                        if (!PersonName.Contains('.') && !PersonName.Trim().Any(Char.IsWhiteSpace)) {
+                        if (!PersonName.Contains('.') && !PersonName.Trim().Any(char.IsWhiteSpace)) {
                             Logger.Error("ignore bad person name " + PersonName);
                             return false;
                         }
